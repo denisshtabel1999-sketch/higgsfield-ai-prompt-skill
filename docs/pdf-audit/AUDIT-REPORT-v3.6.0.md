@@ -295,22 +295,23 @@ The Seedance 2 Serious Examples Supplement is a worked-examples companion to `MO
 
 ---
 
-## Backlog — v3.6.3+ planning
+## Backlog — v3.6.4+ planning
 
 | Item | Source | Target location | Priority |
 |------|--------|-----------------|----------|
-| Wardrobe simplification rule (piano test) | Mr. Core long-form item 8 | `higgsfield-cinema` Outfit / Material Sheet section, or `higgsfield-soul` | MEDIUM |
-| Morph Cut / Smooth Cut breathing room (2-second prompted gaps) | Mr. Core long-form item 7 | `higgsfield-cinema` Multi-Shot Manual workflow, or `higgsfield-pipeline` | MEDIUM |
-| Action choreography around AI strengths (location rules, single-gen strategy, action-transforming-space cadence) | Mr. Core long-form items 4–6 | `higgsfield-cinema` Fight Scene Rules extension, or `higgsfield-prompt` Action design discipline | MEDIUM |
-| Studio character vs cinematic character (intermediate-vs-final, Soul Cinema re-pass) | Mr. Core long-form item 3 | `higgsfield-soul` or `higgsfield-cinema` Hero Frame workflow | MEDIUM |
-| 6-Pass Testing Protocol (gap-check against Iteration Rule) | Seedance Prompt Modes slide deck item 8 / prose handbook | `higgsfield-prompt` Iteration Rule extension | LOW (PENDING-CHECK) |
-| Transformation prompt mode | Seedance 2 Serious Examples Supplement item 9 | `higgsfield-seedance` Prompt Modes section | LOW |
-| Seedance 2.0 worked-example library expansion | Seedance 2 Serious Examples Supplement | `higgsfield-seedance` example library (new) | LOW |
+| ~~Wardrobe simplification rule (piano test)~~ | ~~Mr. Core long-form item 8~~ | ~~`higgsfield-cinema` Outfit / Material Sheet section, or `higgsfield-soul`~~ | ~~MEDIUM~~ — closed in v3.6.4 (`higgsfield-cinema` Outfit / Material Sheet → piano test) |
+| ~~Morph Cut / Smooth Cut breathing room (2-second prompted gaps)~~ | ~~Mr. Core long-form item 7~~ | ~~`higgsfield-cinema` Multi-Shot Manual workflow, or `higgsfield-pipeline`~~ | ~~MEDIUM~~ — closed in v3.6.4 (`higgsfield-cinema` Multi-Shot Manual → breathing room; cross-linked from `higgsfield-pipeline` Stage 8) |
+| ~~Action choreography around AI strengths (location rules, single-gen strategy, action-transforming-space cadence)~~ | ~~Mr. Core long-form items 4–6~~ | ~~`higgsfield-cinema` Fight Scene Rules extension, or `higgsfield-prompt` Action design discipline~~ | ~~MEDIUM~~ — closed in v3.6.4 (`higgsfield-cinema` Fight Scene & Action Design Rules → Action Design Around AI Strengths) |
+| ~~Studio character vs cinematic character (intermediate-vs-final, Soul Cinema re-pass)~~ | ~~Mr. Core long-form item 3~~ | ~~`higgsfield-soul` or `higgsfield-cinema` Hero Frame workflow~~ | ~~MEDIUM~~ — closed in v3.6.4 (`higgsfield-soul` Soul Cinema as the CS 3.0/3.5 Default Image Model → Studio Look vs. Cinematic Look) |
+| ~~6-Pass Testing Protocol (gap-check against Iteration Rule)~~ | ~~Seedance Prompt Modes slide deck item 8 / prose handbook~~ | ~~`higgsfield-prompt` Iteration Rule extension~~ | ~~LOW (PENDING-CHECK)~~ — closed in v3.6.4 (`higgsfield-prompt` Iteration Rule → 6-Pass Diagnostic Sequence; PARTIAL GAP verdict — 6-Pass ships as subordinate diagnostic tool) |
+| ~~Transformation prompt mode~~ | ~~Seedance 2 Serious Examples Supplement item 9~~ | ~~`higgsfield-seedance` Prompt Modes section~~ | ~~LOW~~ — closed in v3.6.4 (`higgsfield-seedance` Prompt Modes → Transformation) |
+| ~~Seedance 2.0 worked-example library expansion~~ | ~~Seedance 2 Serious Examples Supplement~~ | ~~`higgsfield-seedance` example library (new)~~ | ~~LOW~~ — closed in v3.6.4 as 5 Seedance 2.0 examples in `prompt-examples.md` (Action, Drama, Sci-Fi, Product/Commercial, Transformation genres) instead of a new file |
 | AI director toggle behavioral documentation | CinemaStudioRecap PDF item 12 + future UI verification | `higgsfield-cinema` Cinema Studio 3.5 section | BLOCKED (function unverified) |
-| Per-Cinematic-model deep workflow guidance (image and video) — when to pick each Cinematic model for which intent, prompting patterns specific to each, video-mode picker structure | 2026-04-25 UI verification (additional screenshots) | `higgsfield-cinema` — extend Cinema Studio 3.5 Image Mode subsection + add video-mode picker subsection | HIGH |
+| ~~Per-Cinematic-model deep workflow guidance (image and video) — when to pick each Cinematic model for which intent, prompting patterns specific to each, video-mode picker structure~~ | ~~2026-04-25 UI verification (additional screenshots)~~ | ~~`higgsfield-cinema` — extend Cinema Studio 3.5 Image Mode subsection + add video-mode picker subsection~~ | ~~HIGH~~ — closed in v3.6.3 (`higgsfield-cinema` § Per-Cinematic-model selection guide); stale row carried over from v3.6.2 re-label, struck in v3.6.4 cleanup |
 | Strip product-marketing language from skill content — file-wide pass on `MODELS-DEEP-REFERENCE.md` (e.g., ⭐ EXCLUSIVE, Current Top Model, similar superlatives) | 2026-04-25 review during v3.6.0 integration | `skills/higgsfield-models/MODELS-DEEP-REFERENCE.md` — file-wide style normalization pass | LOW |
 | Path B — Refactor `generate_user_guide.py` to parse `SKILL.md` files dynamically. Eliminates manual sync burden — by v3.6.1 the PDF was 6 releases stale. Substantial release on its own (~3–4 hours of refactor + validation), should not mix with content writing. | 2026-04-25 USER-GUIDE staleness scoping during v3.6.2 planning | `generate_user_guide.py` — full refactor to read `SKILL.md` + `skills/*/SKILL.md` + `CHANGELOG.md` and generate sections dynamically | MEDIUM (v3.7.x+) |
 | USER-GUIDE.pdf comprehensive expansion — full Cinema Studio 3.5 / Image Mode / Elements / Physics Matrix / Motion Control / workspace-first / Reference Sheet Types sections. Bundle with Path B refactor since hardcoded sections written now would be discarded in the refactor. | 2026-04-25 USER-GUIDE staleness scoping during v3.6.2 planning | `generate_user_guide.py` after Path B refactor — auto-pull from `SKILL.md` files | LOW (v3.7.x+) |
+| Audio-block diversity pass for Seedance worked examples in `prompt-examples.md` — all five v3.6.4 examples use the same audio-block compositional pattern (primary action + environmental texture + distant element + low/no music indicator). Future pass to vary across foreground-heavy, ambient-heavy, music-foregrounded, dialog-anchored, and sound-design-anchored shapes. | 2026-05-03 v3.6.4 review | `prompt-examples.md` § Action / Drama / Sci-Fi / Product / Transformation Seedance examples | LOW |
 
 ---
 

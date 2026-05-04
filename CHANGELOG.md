@@ -1,5 +1,58 @@
 # Changelog
 
+## v3.6.4 — 2026-05-03
+
+### Added
+
+- **6-Pass Diagnostic Sequence subsection** in `skills/higgsfield-prompt/SKILL.md` — new `### When You Don't Know What's Wrong Yet — the 6-Pass Diagnostic Sequence` h3 inserted into the existing Iteration Rule section. Six-variable diagnostic sequence (subject → action → camera → style → audio → output) for finding which variable to change when the Iteration Rule's "pick the one that's wrong" can't be answered yet. Frames the 6-Pass as a finder, not a refinement loop — once the variable is identified, the Iteration Rule takes over.
+  - Sub-bullet: PDF order preserved verbatim (subject / action / camera / style / audio / output).
+  - Sub-bullet: cross-link added in `skills/higgsfield-seedance/SKILL.md` Related Skills section pointing back at the new subsection.
+- **Transformation prompt mode** added to `skills/higgsfield-seedance/SKILL.md` — fifth mode in the Seedance 2.0 Prompt Modes catalog, alongside Reference-Based, Continuation, Expand Shot, and Edit Shot. Describes a state change inside a single clip (distinct from Continuation, which extends time across two clips, and Edit Shot, which patches a generated clip after the fact).
+  - Sub-bullet: section opener at L80 updated from "four generation modes" → "five generation modes".
+  - Sub-bullet: Mode Selection Rule paragraph extended with Transformation routing logic.
+  - Sub-bullet: full prose phrase "Transformation prompt mode" used wherever ambiguity with the existing Transformation genre in `prompt-examples.md` is possible. One-line disambiguation gloss added to the top of the `prompt-examples.md` Transformation genre section.
+- **Action Design Rules subsection** in `skills/higgsfield-cinema/SKILL.md` — new `### Action Design Around AI Strengths` h3 appended to the (renamed) Fight Scene & Action Design Rules section. Adapted from the Mr. Core methodology — covers location selection (forgiving vs. punishing spaces), choreography around model strengths, the one-transformation-per-shot rule, and single-generation strategy.
+- **Morph-Cut breathing room** in `skills/higgsfield-cinema/SKILL.md` Multi-Shot Manual subsection — explicit 2-second still-or-near-still moments at the start and end of every shot to give editors morph-cut and smooth-cut landing points. Adapted from the Mr. Core methodology.
+- **The piano test** in `skills/higgsfield-cinema/SKILL.md` Outfit/Material Sheet subsection — wardrobe complexity has a generation cost; if a wardrobe element is as visually demanding as a piano in the frame, the model spends its budget rendering it instead of the action. Strip wardrobe to the simplest silhouette that reads as the character. Adapted from the Mr. Core methodology.
+- **Studio Look vs. Cinematic Look — Soul Cinema as the Re-Pass** subsection in `skills/higgsfield-soul/SKILL.md` — new h3 inside the existing Soul Cinema as the CS 3.0/3.5 Default Image Model section. Diagnoses the studio look (clean / evenly lit / glossy / plastic-feeling), prescribes the re-pass workflow through Soul Cinema with explicit grade / lighting / lens / palette direction. Adapted from the Mr. Core methodology. Includes explicit gloss disambiguating "studio look" (visual quality of output) from "Cinema Studio" (the product).
+- **Five Seedance 2.0 worked examples** added to `prompt-examples.md` — one per chosen genre, each with full audio block as a first-class element:
+  - Sub-bullet: Action → Underground Parking Pursuit (Reference-Based mode)
+  - Sub-bullet: Drama → Hospital Vigil II (Continuation mode)
+  - Sub-bullet: Sci-Fi → Derelict Station Approach (Reference-Based mode)
+  - Sub-bullet: Product/Commercial → Coffee Beans — Label Iteration (Edit Shot mode)
+  - Sub-bullet: Transformation → Awakening II (Transformation prompt mode)
+- **Three template cross-links** in `templates/01-cinematic-action-chase.md`, `templates/02-product-ugc-showcase.md`, `templates/05-sci-fi-vfx.md` pointing at the new Seedance worked examples in `prompt-examples.md`.
+
+### Changed
+
+- **Section rename in `skills/higgsfield-cinema/SKILL.md`** — "Fight Scene Rules (Tested)" → "Fight Scene & Action Design Rules (Tested)" to accommodate the new Action Design subsection.
+- **One-line cross-link in `skills/higgsfield-pipeline/SKILL.md` Stage 8 — Assembly** pointing at the Morph-Cut breathing room rule for cut-friendly source-material generation.
+- **Backlog cleanup in `docs/pdf-audit/AUDIT-REPORT-v3.6.0.md`** — section header re-labeled "v3.6.3+ planning" → "v3.6.4+ planning"; eight rows struck (the four Mr. Core sub-concepts shipped here, the 6-Pass Testing Protocol gap-check, the Transformation prompt mode, the Seedance worked-example library, and the stale Per-Cinematic-model deep workflow guidance row that v3.6.3 already closed). Three rows remain open (AI director toggle BLOCKED, product-marketing language strip LOW, Path B refactor + USER-GUIDE expansion v3.7.x+); one new row added (audio-block diversity pass — see Notes).
+- **Frontmatter version bumps** — root `SKILL.md` 3.6.3 → 3.6.4; `skills/higgsfield-prompt/SKILL.md` 3.1.0 → 3.2.0; `skills/higgsfield-seedance/SKILL.md` 1.0.0 → 1.1.0; `skills/higgsfield-cinema/SKILL.md` 3.1.0 → 3.2.0; `skills/higgsfield-soul/SKILL.md` 3.1.0 → 3.2.0. `skills/higgsfield-pipeline/SKILL.md` updated-date refreshed only (single one-line cross-link, no version bump). All `updated` fields set to 2026-05-03.
+
+### Sourcing
+
+All four content arcs are sourced from `docs/pdf-audit/AUDIT-REPORT-v3.6.0.md` — the GAP candidates flagged for v3.6.1+ deferral during the v3.6.0 audit. No new external source material this release; this is the deferred-backlog payoff release.
+
+- 6-Pass Diagnostic Sequence — Seedance 2.0 Prompt Modes slide deck item 8 + Seedance Promt modes prose handbook (sibling pair, GAP/PENDING-CHECK in v3.6.0 audit).
+- Transformation prompt mode — Seedance 2 Serious Examples Supplement item 9 (GAP/deferred in v3.6.0 audit).
+- Seedance 2.0 worked-example library — Seedance 2 Serious Examples Supplement (REINFORCE-only in v3.6.0 audit, integrated as worked illustrations of existing patterns).
+- Mr. Core methodology (4 sub-concepts) — Building a Cinematic Universe Mr. Core long-form items 3, 4–6 (collapsed to "Action choreography"), 7, 8 (GAPs in v3.6.0 audit).
+
+The v3.6.0 audit flagged the 6-Pass as PENDING-CHECK — the gap-check verdict is recorded above as PARTIAL GAP: the Iteration Rule covers the single-variable principle; the 6-Pass adds a prescribed diagnostic order and includes audio + output axes the Iteration Rule does not name. The 6-Pass therefore ships as a subordinate diagnostic tool inside the Iteration Rule section, not as a competing rule.
+
+### Notes
+
+- **Largest release in repo history.** Bundles four unrelated arcs into one merge — a 6-pass diagnostic, a fifth Seedance prompt mode, a Mr. Core methodology pass distributed across cinema and soul, and a Seedance worked-example library expansion. Total ~5–6 hours of content work; release process overhead handled separately.
+- **Distributed Mr. Core placement.** Methodology integrated where each piece lands most naturally — Action Design + Morph-Cut breathing room + piano test in `higgsfield-cinema`, Studio→Cinematic re-pass in `higgsfield-soul`, lightweight cross-link from `higgsfield-pipeline` Stage 8. No "Mr. Core" in any section header; attribution lives in body text only ("adapted from the Mr. Core methodology").
+- **"Studio look" disambiguation.** First appearance of the term in `higgsfield-soul` includes an explicit gloss distinguishing the visual-quality sense ("studio-feeling output") from the Cinema Studio product. Full phrasing — "studio look," "studio-feeling" — used throughout the new content; bare "studio" avoided where it could be confused.
+- **Templates cross-link gap.** Only 3 of the 5 chosen Item 3 genres (Action, Product/Commercial, Sci-Fi) have corresponding files in `templates/`. Drama and Transformation templates do not exist; Item 3 cross-links those two genres only inside `prompt-examples.md`, not in `templates/`. New Drama / Transformation templates deferred — earn their own future release if the gap stays felt.
+- **No v3.6.0 Cinema Studio framing changes.** Studio-look disambiguation lives entirely in new content; no concurrent edits to existing Cinema Studio 3.5 sections.
+- **No new sub-skills, no routing changes, no Featured-models documentation drift.**
+- **Audio-block diversity pass deferred** — all five Seedance worked examples use the same compositional shape (primary action + environmental texture + distant element + low/no music indicator). A future release could vary this with foreground-heavy, ambient-heavy, music-foregrounded, dialog-anchored, or sound-design-anchored audio shapes. Tracked as v3.6.5+ backlog.
+
+Commit prefix: `feat: v3.6.4 — Mr. Core methodology + Seedance 5th prompt mode + 6-Pass + Seedance worked examples`
+
 ## v3.6.3 — 2026-04-25
 
 ### Added
