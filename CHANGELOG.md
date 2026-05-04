@@ -1,5 +1,41 @@
 # Changelog
 
+## v3.7.0 — 2026-05-04
+
+### Changed
+
+- **`generate_user_guide.py` Path B refactor (Option D scope)** — version metadata + sub-skill list parameterization. Eliminates the manual sync burden that left the PDF six releases stale by v3.6.1. Specifically:
+  - Sub-bullet: New `read_root_metadata()` helper parses root `SKILL.md` frontmatter for `version`, `updated`, `author`. Custom 30-line stdlib-only parser; no new dependencies (script remains `fpdf`-only on the third-party side).
+  - Sub-bullet: New `discover_sub_skills()` helper walks `skills/*/` for SKILL.md presence; excludes `shared/` utility directory.
+  - Sub-bullet: New `SUB_SKILL_DESCRIPTIONS` dict at top of script holds the editorial summaries for the Section 22 sub-skill table — preserves v3.6.5 byte-for-byte equivalence (frontmatter `description:` fields are routing-trigger language, not editorial summaries; using them would be a content regression).
+  - Sub-bullet: Build-time invariant check: filesystem-discovered sub-skill set must equal `SUB_SKILL_DESCRIPTIONS.keys()`; mismatch raises with a clear "update the dict" error message. **Catches the staleness scenario** (a new sub-skill was added without updating the PDF) at build time instead of letting the PDF silently drift.
+  - Sub-bullet: 5 hardcoded version strings replaced with `META['version']` references (line 16 header, line 139 cover, line 743 FAQ Q5, line 763 footer; module docstring rewritten without inline version).
+  - Sub-bullet: Hardcoded date strings (line 139 cover, line 763 footer) replaced with `META['updated']`.
+  - Sub-bullet: Hardcoded author string ("O-Side Media", lines 139 + 763) replaced with `META['author']`.
+  - Sub-bullet: PDF creation date pinned via `pdf.set_creation_date(datetime.fromisoformat(META['updated']))` for reproducible binary builds (FPDF2's default embeds wall-clock time in `/CreationDate`, breaking binary diff).
+  - Sub-bullet: Section 22 "Sub-Skills (20 total)" count is now `f"Sub-Skills ({len(SUB_SKILL_DESCRIPTIONS)} total)"` — auto-updates when a new sub-skill is added.
+  - Sub-bullet: **Root-files table at Section 22 kept hardcoded.** Set is small, stable, descriptions are editorial; dynamic walk would either break byte-for-byte (by including all root .md/.py/.pdf files) or require an allowlist (defeating the purpose). Cost-of-hardcoded ≈ zero, value-of-dynamic ≈ near-zero for this case.
+- **FAQ Q5 staleness bug fix** — line 743 said "currently v3.0.0" since pre-v3.6.2 (wrong even within the v3.6.2 build). Now parameterized via `META['version']`, reads "currently v3.7.0" in this build and tracks every future release.
+- **New repo file: `validate_user_guide.py`** — lightweight (~190 lines including methodology docstring) validation script. Three-layer validation: build-time invariants (in-script raises), text-extract diff (`pdftotext -layout` or `pdfplumber` fallback) against a frozen baseline PDF with version/date/count patterns normalized away, and binary diff (post-timestamp-pinning, informational). Run before any future PDF regeneration to catch unintended drift. Opens with a methodology docstring documenting what counts as an allowed change vs a regression so future maintainers can read the script's purpose without reverse-engineering the regex patterns.
+- **`USER-GUIDE.pdf` regenerated** by the refactored script. Layer 1 text-extract diff against frozen v3.6.5 baseline: PASS (zero substantive content regressions after normalizing version/date/count patterns). Layer 2 binary diff: bytes differ throughout the PDF's compressed object streams — expected behavior, since small text changes (v3.6.5 → v3.7.0, 2026-04-25 → 2026-05-04) cascade through deflate-compressed streams shifting many byte positions. Page count unchanged at 19 pages.
+- **Backlog cleanup in `docs/pdf-audit/AUDIT-REPORT-v3.6.0.md`** — section header re-labeled "v3.6.5+ planning" → "v3.7.0+ planning". Path B refactor row struck with closure annotation. USER-GUIDE comprehensive expansion row stays open with a v3.7.1+ note that explicitly enumerates the drift catalog (D3-D8) as the v3.7.1+ content scope. AI director toggle row remains open (BLOCKED — function unverified).
+- **Frontmatter version bump** — root `SKILL.md` 3.6.5 → 3.7.0. `updated` field unchanged at 2026-05-04 (same-day release). No sub-skill frontmatter bumps — refactor is build-tooling only, no sub-skill content changed.
+
+### Sourcing
+
+- Path B refactor — sourced from the original 2026-04-25 v3.6.0 audit observation that the PDF was 6 releases stale; tracked as MEDIUM-priority backlog row across v3.6.x. Scope locked to Option D after structural read of the existing 770-line generator surfaced architectural cost asymmetries between options.
+
+### Notes
+
+- **Option D scope rationale (why not Option B).** The structural read of `generate_user_guide.py` recalibrated the audit's "~3-4 hours" estimate against four viable refactor shapes: Option A (metadata-only, ~2h), Option D (Option A + sub-skill enumeration, ~1.5-2h), Option C (hybrid with content-in-YAML, ~3-4h), and Option B (full SKILL.md parsing with custom markdown→FPDF renderer, ~10-15h). The audit's estimate was calibrated for Option C scope but described Option B language. Option B's true cost (markdown parser + table-width pinning + 5 synthesized sections without SKILL.md homes + heading-anchor stability + ongoing maintenance burden) significantly exceeds the value delivered by Option D for the *concrete* staleness problem (version metadata + sub-skill count). Option D ships the cheapest refactor that solves the staleness pain that motivated the row.
+- **What's deferred to v3.7.1+ (drift catalog).** v3.7.0 ships v3.6.5-equivalent PDF content (byte-for-byte except metadata bytes after pattern normalization). Content drift between the PDF and current SKILL.md content remains, catalogued during scoping as items D3 through D8: Cinema Studio 3.5 selection guide unreflected; the 5 Seedance prompt modes (incl. v3.6.4 Transformation prompt mode) unreflected in Section 10; v3.6.3 Soul Cinema and v3.6.4 Studio Look re-pass unreflected in Section 11; v3.6.4 Iteration Rule + 6-Pass Diagnostic Sequence unreflected in Section 18; v3.6.0 Reference Sheet Types and v3.6.4 piano test / Action Design / Morph-Cut breathing room unreflected in Section 21; sub-skill row descriptions unreflected for v3.6.4 additions in Section 22. **All deferred to v3.7.1+** as content-expansion work, not refactor scope.
+- **`refactor:` introduced as fourth Conventional Commits prefix** in repo history. Prior prefixes: `feat:` (v3.4.0–v3.6.0, v3.6.3, v3.6.4 — new content arcs), `chore:` (v3.6.1 — config), `docs:` (v3.6.2, v3.6.5 — content polish). `refactor:` semantics: code reorganization that does not change observable behavior or content. v3.7.0 fits — the generated PDF's content is byte-equivalent to v3.6.5 (per Layer 1 text-extract diff after pattern normalization) except for metadata bytes (which the refactor itself fixes as a deliberate change, not a regression).
+- **Validation results.** Layer 1 text-extract diff against frozen v3.6.5 baseline: PASS — zero substantive differences flagged after normalizing version/date/count patterns. Layer 2 binary diff: 28247 byte positions differ in a 33648-byte file — expected behavior because PDF deflate-compressed object streams cascade-shift on small text changes; Layer 1 is the authoritative content check. No content regressions. No layout shifts (page count unchanged at 19).
+- **Build-time staleness protection.** Future releases that add a new sub-skill will trigger the filesystem-vs-`SUB_SKILL_DESCRIPTIONS` invariant check at build time, raising with a clear error message. The PDF cannot silently drift on the sub-skill list anymore.
+- **No sub-skill content changed. No new sub-skills, no routing changes, no SKILL.md edits beyond the root frontmatter version bump.**
+
+Commit prefix: `refactor: v3.7.0 — generate_user_guide.py Path B refactor (Option D — metadata + sub-skill list parameterization)`
+
 ## v3.6.5 — 2026-05-04
 
 ### Changed

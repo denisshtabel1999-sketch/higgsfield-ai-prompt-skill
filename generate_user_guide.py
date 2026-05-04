@@ -1,7 +1,90 @@
 #!/usr/bin/env python3
-"""Generate USER-GUIDE.pdf for Higgsfield AI Prompt Skill v3.6.2"""
+"""Generate USER-GUIDE.pdf for Higgsfield AI Prompt Skill.
+
+Version metadata is read from the root SKILL.md frontmatter at build time.
+Sub-skill list at Section 22 is discovered by filesystem walk of skills/.
+Per-sub-skill description text remains hardcoded in SUB_SKILL_DESCRIPTIONS
+below to preserve the v3.6.5 PDF's editorial summaries.
+"""
+
+import re
+from datetime import datetime
+from pathlib import Path
 
 from fpdf import FPDF
+
+
+REPO_ROOT = Path(__file__).resolve().parent
+ROOT_SKILL_PATH = REPO_ROOT / "SKILL.md"
+SKILLS_DIR = REPO_ROOT / "skills"
+
+
+def read_root_metadata():
+    """Parse root SKILL.md frontmatter for version, updated, author."""
+    text = ROOT_SKILL_PATH.read_text(encoding="utf-8")
+    m = re.match(r"^---\s*\n(.*?)\n---\s*\n", text, re.DOTALL)
+    if not m:
+        raise RuntimeError(f"No YAML frontmatter found in {ROOT_SKILL_PATH}")
+    fm = m.group(1)
+
+    def field(name, default=None):
+        # Match "name: value" at any indent depth, capture value through end-of-line.
+        match = re.search(rf"^\s*{re.escape(name)}:\s*(.+?)\s*$", fm, re.MULTILINE)
+        if not match:
+            if default is None:
+                raise RuntimeError(f"Field '{name}' not found in root SKILL.md frontmatter")
+            return default
+        return match.group(1).strip()
+
+    return {
+        "version": field("version"),
+        "updated": field("updated"),
+        "author": field("author", "O-Side Media"),
+    }
+
+
+def discover_sub_skills():
+    """Filesystem walk of skills/*/SKILL.md. Returns ordered list of sub-skill names.
+
+    Excludes shared/ (utility directory, no SKILL.md). Order is deterministic
+    (alphabetical by directory name). Per-sub-skill descriptions are looked up
+    in SUB_SKILL_DESCRIPTIONS below, NOT extracted from frontmatter (which
+    carries routing-trigger language, not editorial summaries).
+    """
+    out = []
+    for d in sorted(SKILLS_DIR.iterdir()):
+        if not d.is_dir():
+            continue
+        if d.name == "shared":
+            continue
+        if not (d / "SKILL.md").exists():
+            continue
+        out.append(d.name)
+    return out
+
+
+SUB_SKILL_DESCRIPTIONS = {
+    "higgsfield-prompt":      "MCSLA formula + Seedance 2.0 best practices",
+    "higgsfield-image-shots": "Cinematic image prompting",
+    "higgsfield-models":      "Model selection guide + CS 3.0 comparison",
+    "higgsfield-camera":      "Camera controls + One-Move Rule + Smart Mode",
+    "higgsfield-motion":      "Motion presets + intent-first choreography",
+    "higgsfield-style":       "Visual styles + One Style Anchor Rule",
+    "higgsfield-soul":        "Soul ID + Soul Cast 3.0 + Soul Cinema (CS 3.0/3.5 default image model)",
+    "higgsfield-audio":       "Audio prompting + CS 3.0 native audio (SCELA)",
+    "higgsfield-apps":        "One-click Apps guide (80+)",
+    "higgsfield-recipes":     "Genre templates",
+    "higgsfield-troubleshoot":"Fix generations + CS 3.0 diagnostic tree",
+    "higgsfield-assist":      "Platform copilot + credit optimization",
+    "higgsfield-mixed-media": "Artistic preset overlays",
+    "higgsfield-moodboard":   "Moodboard + style consistency",
+    "higgsfield-pipeline":    "Multi-step production pipeline",
+    "higgsfield-cinema":      "Cinema Studio 2.5 + 3.0 + 3.5 (Soul Cast, Image Mode, Cinematic models)",
+    "higgsfield-recall":      "Pre-generation memory check",
+    "higgsfield-vibe-motion": "Vibe Motion / motion graphics",
+    "higgsfield-seedance":    "Seedance 2.0 prompt director + content-filter preflight",
+    "higgsfield-workspaces":  "Workspace-first decision layer",
+}
 
 
 class UserGuidePDF(FPDF):
@@ -13,7 +96,7 @@ class UserGuidePDF(FPDF):
         if self.page_no() > 1:
             self.set_font("Helvetica", "I", 8)
             self.set_text_color(128, 128, 128)
-            self.cell(0, 10, "Higgsfield AI Prompt Skill - User Guide v3.6.2", align="L")
+            self.cell(0, 10, f"Higgsfield AI Prompt Skill - User Guide v{META['version']}", align="L")
             self.ln(5)
 
     def footer(self):
@@ -110,9 +193,17 @@ class UserGuidePDF(FPDF):
         self.set_font("Helvetica", "", 10)
 
 
+# Read version/date/author from root SKILL.md frontmatter (single source of truth).
+META = read_root_metadata()
+
+
 def build_pdf():
     pdf = UserGuidePDF()
     pdf.alias_nb_pages()
+    # Pin creation date to the metadata 'updated' field for reproducible builds.
+    # Without this, FPDF2 embeds current time in /CreationDate, breaking
+    # byte-for-byte reproducibility across runs.
+    pdf.set_creation_date(datetime.fromisoformat(META["updated"]))
 
     # --- COVER PAGE ---
     pdf.add_page()
@@ -136,7 +227,7 @@ def build_pdf():
         align="C")
     pdf.ln(15)
     pdf.set_font("Helvetica", "I", 11)
-    pdf.cell(0, 8, "v3.6.2 | 2026-04-25 | Built by O-Side Media", align="C")
+    pdf.cell(0, 8, f"v{META['version']} | {META['updated']} | Built by {META['author']}", align="C")
 
     # --- TABLE OF CONTENTS ---
     pdf.add_page()
@@ -699,33 +790,23 @@ def build_pdf():
         pdf.table_row(list(f), w13)
 
     pdf.ln(3)
-    pdf.subsection_title("Sub-Skills (20 total)")
+    discovered = set(discover_sub_skills())
+    declared = set(SUB_SKILL_DESCRIPTIONS.keys())
+    if discovered != declared:
+        added = discovered - declared
+        removed = declared - discovered
+        raise RuntimeError(
+            f"Sub-skill list out of sync between filesystem and SUB_SKILL_DESCRIPTIONS.\n"
+            f"  In filesystem but undeclared: {sorted(added)}\n"
+            f"  Declared but missing from filesystem: {sorted(removed)}\n"
+            f"Update SUB_SKILL_DESCRIPTIONS at top of generate_user_guide.py."
+        )
+
+    pdf.subsection_title(f"Sub-Skills ({len(SUB_SKILL_DESCRIPTIONS)} total)")
     w14 = [55, 115]
     pdf.table_row(["Sub-Skill", "What it covers"], w14, bold=True, fill=True)
-    skills = [
-        ("higgsfield-prompt", "MCSLA formula + Seedance 2.0 best practices"),
-        ("higgsfield-image-shots", "Cinematic image prompting"),
-        ("higgsfield-models", "Model selection guide + CS 3.0 comparison"),
-        ("higgsfield-camera", "Camera controls + One-Move Rule + Smart Mode"),
-        ("higgsfield-motion", "Motion presets + intent-first choreography"),
-        ("higgsfield-style", "Visual styles + One Style Anchor Rule"),
-        ("higgsfield-soul", "Soul ID + Soul Cast 3.0 + Soul Cinema (CS 3.0/3.5 default image model)"),
-        ("higgsfield-audio", "Audio prompting + CS 3.0 native audio (SCELA)"),
-        ("higgsfield-apps", "One-click Apps guide (80+)"),
-        ("higgsfield-recipes", "Genre templates"),
-        ("higgsfield-troubleshoot", "Fix generations + CS 3.0 diagnostic tree"),
-        ("higgsfield-assist", "Platform copilot + credit optimization"),
-        ("higgsfield-mixed-media", "Artistic preset overlays"),
-        ("higgsfield-moodboard", "Moodboard + style consistency"),
-        ("higgsfield-pipeline", "Multi-step production pipeline"),
-        ("higgsfield-cinema", "Cinema Studio 2.5 + 3.0 + 3.5 (Soul Cast, Image Mode, Cinematic models)"),
-        ("higgsfield-recall", "Pre-generation memory check"),
-        ("higgsfield-vibe-motion", "Vibe Motion / motion graphics"),
-        ("higgsfield-seedance", "Seedance 2.0 prompt director + content-filter preflight"),
-        ("higgsfield-workspaces", "Workspace-first decision layer"),
-    ]
-    for s in skills:
-        pdf.table_row(list(s), w14)
+    for name, desc in SUB_SKILL_DESCRIPTIONS.items():
+        pdf.table_row([name, desc], w14)
 
     # --- 23. FAQ ---
     pdf.add_page()
@@ -740,7 +821,7 @@ def build_pdf():
         ("Can I use this with other AI video tools?",
          "The prompts are optimized for Higgsfield specifically. General prompt techniques (MCSLA, shot framing) transfer to other tools."),
         ("How do I get updates?",
-         "The skill is versioned (currently v3.0.0). Check the repository for updates."),
+         f"The skill is versioned (currently v{META['version']}). Check the repository for updates."),
         ("Can I contribute?",
          "Yes! Fork the repo, add your improvements, and submit a pull request."),
         ("What changed since v3.0.0?",
@@ -760,7 +841,7 @@ def build_pdf():
     pdf.ln(10)
     pdf.set_font("Helvetica", "I", 11)
     pdf.set_text_color(100, 100, 100)
-    pdf.cell(0, 8, "Built by O-Side Media | v3.6.2 | 2026-04-25 | Platform: higgsfield.ai", align="C")
+    pdf.cell(0, 8, f"Built by {META['author']} | v{META['version']} | {META['updated']} | Platform: higgsfield.ai", align="C")
 
     pdf.output("USER-GUIDE.pdf")
     print(f"Generated USER-GUIDE.pdf ({pdf.page_no()} pages)")
