@@ -67,3 +67,8 @@ A woman sprints through a rain-soaked night market, sliding under a metal gate.
 Gravel sprays, steam scatters from food carts. Camera: tracking, low angle.
 Style: cold blue shadows, warm amber market light.
 ```
+
+## See also
+
+A Seedance 2.0 worked example for this genre (Reference-Based mode) ships in
+`prompt-examples.md` § Action → Underground Parking Pursuit.

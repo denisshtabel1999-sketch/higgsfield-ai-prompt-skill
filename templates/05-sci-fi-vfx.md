@@ -79,3 +79,8 @@ hull glowing from atmospheric friction. Debris scatters. Lightning illuminates t
 Camera: crane down tracking the descent. Style: anamorphic, teal and orange grade.
 Audio: deep engine rumble, crackling electricity, wind shear.
 ```
+
+## See also
+
+A Seedance 2.0 worked example for this genre (Reference-Based mode) ships in
+`prompt-examples.md` § Sci-Fi → Derelict Station Approach.

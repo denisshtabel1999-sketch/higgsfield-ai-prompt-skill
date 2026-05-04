@@ -68,3 +68,8 @@ Soft studio lighting catches the matte-black finish. Subtle reflection on surfac
 Camera: orbit. Style: clean white studio, shallow depth of field.
 Audio: soft surface contact, gentle mechanical click.
 ```
+
+## See also
+
+A Seedance 2.0 worked example for this genre (Edit Shot mode) ships in
+`prompt-examples.md` § Product / Commercial → Coffee Beans — Label Iteration.

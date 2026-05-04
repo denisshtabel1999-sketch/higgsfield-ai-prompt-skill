@@ -207,6 +207,39 @@ Style: Anamorphic. Deep desaturated blue-grey. Lens flare on distant lightning. 
 Apply Bullet Time preset at the moment of the throw.
 ```
 
+### Underground Parking Pursuit — Seedance 2.0 (Reference-Based)
+
+```
+Model: Seedance 2.0 (Reference-Based mode)
+Aspect: 16:9 | Duration: 8s | Style: Cinematic
+
+[Reference image: hero character — woman, late 20s, charcoal track jacket,
+short cropped hair — as the main character]
+
+Style & Mood: cold sodium-vapor underground, deep shadows under concrete pillars,
+faint exhaust haze, anamorphic flares on overhead fluorescents.
+
+Dynamic Description: The Soul ID character sprints between two rows of parked
+cars, glances back over her shoulder at footsteps gaining behind her, vaults
+the hood of a sedan, lands and keeps running toward the ramp at frame right.
+Camera tracks low and right, matching her pace, losing and regaining her
+between pillars.
+
+Static Description: Underground parking level, concrete pillars, sodium
+overhead lighting, scattered parked cars. Wet patches on the floor catch
+practical light.
+
+Camera: Low tracking shot, parallel right, following at running pace.
+
+Audio: rapid breathing close to camera, sneakers slapping on wet concrete,
+distant footfalls echoing behind, a fluorescent ballast humming overhead, no
+music.
+```
+
+Reference-Based mode keeps the character's face and wardrobe locked from the
+upload; the prompt does not re-describe them. Identity travels with the
+reference; action and environment travel in the prompt.
+
 ---
 
 ## Drama
@@ -233,6 +266,44 @@ Then — she sees. The sign drops. She moves forward through the crowd.
 Camera: slow Arc around the moment they embrace, world blurring behind them.
 Style: Super 8MM. Warm grain, soft vignette, lifted shadows. 16:9.
 ```
+
+### Hospital Vigil II — Seedance 2.0 (Continuation)
+
+```
+Model: Seedance 2.0 (Continuation mode)
+Aspect: 2.39:1 | Duration: 6s | Style: Naturalistic
+
+Continuing from the prior clip — the husband framed at the bedside, head
+bowed, his hand on hers, the heart monitor's rhythm filling the silence.
+
+[Identity block verbatim: man in his late 40s, lined face, three-day stubble,
+grey sweater frayed at the cuffs, wedding ring loose on his finger, exhausted
+but composed.]
+
+Style & Mood: Cold blue practical light from the corridor bleeding through
+the half-open door, single warm lamp by the bed. Naturalistic palette,
+muted, shallow depth of field on his face.
+
+Dynamic Description: Following his bowed posture, he slowly lifts his head,
+looks at her face, and his composure cracks — eyes filling but not yet
+spilling, jaw tightening, breath held. Camera holds steady on his face,
+unmoving, letting the change play out.
+
+Static Description: Hospital room at night, single bed, monitor cables, the
+warm bedside lamp the only source of warm light.
+
+Camera: Locked-off medium close-up, no movement.
+
+Audio: heart monitor steady at low tempo, distant intercom paging in another
+ward, his breath catching once, the rustle of bedsheets when his hand
+tightens on hers, no music.
+```
+
+Continuation mode picks up at the final frame of the prior clip — the
+last-frame anchor opens the prompt, the identity block re-pastes verbatim,
+the new beat (the composure breaking) is the only new content. The five
+Continuation rules in `skills/higgsfield-seedance/SKILL.md` § Continuation
+Prompt Formula apply.
 
 ---
 
@@ -262,6 +333,42 @@ Holographic ads flicker and shift above the stalls on either side.
 Camera: Dolly Out slowly as the figure keeps approaching — never quite reaching us.
 Style: Cinematic. Deep shadows, neon magenta and cyan, shallow depth of field. 16:9.
 ```
+
+### Derelict Station Approach — Seedance 2.0 (Reference-Based)
+
+```
+Model: Seedance 2.0 (Reference-Based mode)
+Aspect: 2.39:1 | Duration: 10s | Style: Hard Sci-Fi
+
+[Reference image: hero character — figure in a battered EVA suit, helmet
+off and clipped to the hip, weathered face, close-cropped grey hair — as
+the main character]
+
+Style & Mood: cold blue ambient from a dying station, single warm-amber
+emergency strobe, faint particulate haze in zero-g, hard sci-fi palette,
+crushed blacks.
+
+Dynamic Description: The Soul ID character drifts forward through a
+darkened corridor in zero-g, one gloved hand trailing the bulkhead for
+guidance, the other steadying a tethered toolkit. The emergency strobe
+flickers across her face every 2 seconds. She pauses at a junction, head
+turning slowly toward a flickering panel ahead.
+
+Static Description: Derelict station corridor, exposed conduits along the
+ceiling, frost on the bulkhead seams, debris drifting in the foreground,
+warning labels half-readable on the walls.
+
+Camera: slow dolly-in following her drift, matching her pace, holding her
+in center frame.
+
+Audio: muffled breathing inside the helmet ring, the suit's life-support
+fan steady at low tempo, distant metal groans of the station's hull, the
+emergency strobe's relay clicking each cycle, no music.
+```
+
+Reference-Based mode locks the EVA suit's wear and the character's face from
+the upload. The prompt drives the new environment — derelict station, zero-g
+corridor, emergency lighting — without re-describing identity.
 
 ---
 
@@ -352,6 +459,33 @@ Camera: 3D Rotation — full 360 reveal.
 Style: Cinematic. Pure black background, sharp product detail, 4K. 1:1.
 ```
 
+### Coffee Beans — Label Iteration — Seedance 2.0 (Edit Shot)
+
+```
+Model: Seedance 2.0 (Edit Shot mode)
+Aspect: 1:1 | Duration: 6s | Style: Commercial
+
+[Source clip: the existing "Coffee Mug — Morning Ritual" generation]
+
+Change the coffee bag in the background from the kraft-paper version to a
+matte-black version with a single copper foil logo. Keep the steam, the
+ceramic mug, the wooden counter, the light direction, and the camera move
+unchanged.
+
+Preserve identity, composition, lighting, and camera behavior from the
+original. Preserve the morning window light, the warm tones, and the
+shallow depth of field.
+
+Camera: unchanged from source — slow push-in toward the mug.
+
+Audio: same as source — kettle whistling distant, ceramic on wood, no music.
+```
+
+Edit Shot mode is the targeted-patch tool. The prompt names exactly what to
+change (the bag swap) and explicitly preserves everything else. The Keep Rule
+matters — without it, the generation drifts on every variable that isn't
+locked.
+
 ---
 
 ## Nature / Documentary
@@ -415,6 +549,14 @@ Apply Live Concert preset for lighting energy.
 
 ## Transformation
 
+> **Genre vs. Seedance prompt mode:** this section collects examples of the
+> *Transformation genre* — clips where the visible content of the shot is a
+> state change. Distinct from the *Transformation prompt mode* in
+> `skills/higgsfield-seedance/SKILL.md`, which is a Seedance-specific
+> construction pattern for that kind of clip. Examples here use various models;
+> for a Seedance 2.0 worked example using the Transformation prompt mode, see
+> the Awakening II / Seedance 2.0 entry below.
+
 ### Awakening
 ```
 Model: Kling 2.6
@@ -439,3 +581,40 @@ Camera: Crane Up as transformation begins — he starts to lose human form.
 Style: Abstract. Deep greens and silvers, moonlight as only source. 16:9.
 Apply Animalization preset — he becomes a wolf, launching into the forest dark.
 ```
+
+### Awakening II — Seedance 2.0 (Transformation prompt mode)
+
+```
+Model: Seedance 2.0 (Transformation prompt mode)
+Aspect: 16:9 | Duration: 8s | Style: Cinematic
+
+Style & Mood: sterile cold-fluorescent boardroom shifting to deep electric
+blue glow as the change takes hold, anamorphic flares on overhead lights,
+crushed shadows on the floor.
+
+Dynamic Description: A businesswoman in a charcoal grey suit stands at the
+window, rain on the glass behind her, her reflection faintly visible. The
+overhead fluorescents flicker once. She turns toward camera, her eyes
+beginning to glow blue-white from within. Mid-frame, her form expands
+slowly — the suit's seams pulling tight, fabric stretching at the shoulders,
+hairline fissures of blue light tracing along her sternum and forearms. She
+ends standing taller, the suit fully strained, her eyes fully luminous, the
+boardroom now bathed in cold blue cast from her own light.
+
+Static Description: Modern corporate boardroom at night, floor-to-ceiling
+windows, rain on the glass, conference table in soft focus behind her.
+
+Camera: slow crash-zoom in toward her face, settling on the eyes at
+mid-transformation, holding through the end state.
+
+Audio: distant rain on glass, the fluorescents' ballast hum dropping in
+pitch as the change begins, fabric stress, a low rising electric drone
+swelling under her transformation, breath held throughout, no music.
+```
+
+Transformation prompt mode requires an explicit midpoint — the seams
+pulling, the fissures of light — without which the model either snap-cuts
+between start and end or renders an ambiguous blur. The arc is one
+continuous take inside a single 8-second clip. See
+`skills/higgsfield-seedance/SKILL.md` § Transformation for the construction
+pattern.
