@@ -1,5 +1,45 @@
 # Changelog
 
+## v3.6.5 — 2026-05-04
+
+### Changed
+
+- **Marketing-copy strip on `skills/higgsfield-models/MODELS-DEEP-REFERENCE.md`** — file-wide style normalization removing product-marketing language while preserving all capability and routing information. Nine surgical edits:
+  - Sub-bullet: `### Kling 3.0 ⭐ EXCLUSIVE — Current Top Model` → `### Kling 3.0` (plan-availability badge + promotional positioning stripped; `Best for:` and `Strengths:` lines below carry the routing info)
+  - Sub-bullet: `### Kling 3.0 Omni ⭐ EXCLUSIVE` → `### Kling 3.0 Omni`
+  - Sub-bullet: `### Kling 3.0 Omni Edit ⭐ EXCLUSIVE` → `### Kling 3.0 Omni Edit`
+  - Sub-bullet: `### Kling 3.0 Motion Control ⭐ NEW (March 25, 2026)` → `### Kling 3.0 Motion Control (added March 25, 2026)` (`⭐ NEW` temporal marketing stripped; date reframed as factual provenance)
+  - Sub-bullet: Sora 2 Strengths line — `Best-in-class for large-scale events` → `Strongest at large-scale events` (canonical kept-form per the strip rule: "Strongest at X" preserves capability claim without superlative positioning)
+  - Sub-bullet: Kling 2.6 audio capabilities header — `**Audio capabilities (class-leading at this tier):**` → `**Audio capabilities:**` (parenthetical superlative stripped; bulleted capability list below carries the routing info)
+  - Sub-bullet: Aurora text/logos strength row — `One of Aurora's top differentiators — most models fail here` → `Where Aurora outperforms most models — most models fail here` (positioning language stripped; capability claim preserved verbatim)
+  - Sub-bullet: Video Imagine 1.0 — vendor-quoted `"best-in-class instruction following for video generation"` bullet removed entirely (quoted vendor marketing carries no routing info; adjacent bullets carry capability content)
+  - Sub-bullet: Nano Banana Pro Strengths line — `Best image quality on the platform` → `Strongest image quality on the platform`
+- **Cross-file marketing-copy strip in `skills/higgsfield-apps/SKILL.md`** — line 117 `Cinema Studio is Higgsfield's premium filmmaking environment` → `Cinema Studio is Higgsfield's professional filmmaking environment`. Matches the precedent in `skills/higgsfield-cinema/SKILL.md` (which already uses "professional filmmaking environment" in the equivalent slot).
+- **Audio-block diversity pass on the five Seedance 2.0 worked examples in `prompt-examples.md`** — v3.6.4 shipped all five examples with the same audio-block compositional shape (primary action + environmental texture + distant element + low/no music indicator). v3.6.5 varies the shapes one-to-one across the five examples:
+  - Sub-bullet: Underground Parking Pursuit (Action) — **foreground-heavy** shape (close-mic'd breath and stride detail leading; environmental sound demoted with attenuation cues)
+  - Sub-bullet: Hospital Vigil II (Drama) — **music-foregrounded** shape (single sustained low cello note as structural element, swelling through the emotional break; diegetic sound recedes beneath it; no spoken dialog added)
+  - Sub-bullet: Derelict Station Approach (Sci-Fi) — **sound-design-anchored** shape (audio framed as designed/constructed/treated rather than captured; SFX-design vocabulary throughout: treated drone, constructed hull groans, EQ'd helmet breath)
+  - Sub-bullet: Coffee Beans — Label Iteration (Product) — **ambient-heavy** shape ("same as source" Edit Shot framing preserved; kitchen ambience layered as primary content with refrigerator hum, traffic, air; foreground sounds placed *inside* the ambience)
+  - Sub-bullet: Awakening II (Transformation) — **dialog-anchored as wordless vocal performance** shape (her hum anchors the scene with timbre/dynamic/transformation-arc detail; surrounding sound recedes; no spoken-word content — the vocal performance is wordless throughout)
+- **Backlog cleanup in `docs/pdf-audit/AUDIT-REPORT-v3.6.0.md`** — section header re-labeled "v3.6.4+ planning" → "v3.6.5+ planning"; two rows struck with closure annotations (marketing-copy strip closed by Item A above; audio-block diversity closed by Item B above). Three rows remain open: AI director toggle behavioral documentation (BLOCKED — function unverified), Path B generator refactor (v3.7.x+), USER-GUIDE comprehensive expansion (v3.7.x+).
+- **Frontmatter version bumps** — root `SKILL.md` 3.6.4 → 3.6.5; `skills/higgsfield-models/SKILL.md` 3.0.0 → 3.0.1; `skills/higgsfield-apps/SKILL.md` 3.0.0 → 3.0.1. All `updated` fields set to 2026-05-04. Patch-level bumps on the two sub-skills because the changes are content-polish style normalization, not feature additions.
+
+### Sourcing
+
+- Marketing-copy strip — sourced from the original 2026-04-25 v3.6.0 review observation, tracked as a backlog row (LOW priority) since v3.6.0. Strip rule applied per Peter's clarification: strip product-marketing modifiers (plan-availability badges like ⭐ EXCLUSIVE, promotional positioning like Current Top Model, superlative claims like best-in-class / class-leading / top differentiators); keep capability and routing language ("Strongest at X" claims, technical specs, concrete capability descriptors).
+- Audio-block diversity pass — sourced from the 2026-05-03 v3.6.4 release review note, tracked as a v3.6.5+ backlog row added during v3.6.4 cleanup. Five-shape taxonomy applied: foreground-heavy / music-foregrounded / sound-design-anchored / ambient-heavy / dialog-anchored.
+
+### Notes
+
+- **Close-out cleanup release.** v3.6.5 closes the two remaining LOW-priority backlog rows from the v3.6.0 audit + v3.6.4 cleanup. After this release, the only open items in `docs/pdf-audit/AUDIT-REPORT-v3.6.0.md` are the BLOCKED AI director toggle row and two v3.7.x+ planned items (Path B refactor + USER-GUIDE expansion). The v3.6.x cycle is content-complete.
+- **Strip rule sharpened during scoping** — "premium" stripped when it's a plan-tier marketing modifier on the platform itself (one cross-file hit in `higgsfield-apps/SKILL.md`); kept when it's workflow vocabulary describing model cost tiers within a routing pipeline (e.g., `higgsfield-pipeline/SKILL.md` Stage 8 routing pseudocode, `higgsfield-assist/SKILL.md` cost-tier guidance). Both retained-context hits preserved verbatim.
+- **No cross-file false positives.** Wider repo scan surfaced one anti-pattern *example* in `templates/02-product-ugc-showcase.md` (`"Measurable lighting — not 'looks premium'"`) and one anti-slop vocabulary list in `docs/Seedance 2 Skill.md` — both are documentation *against* marketing language and were preserved.
+- **Audio-block stylistic discipline.** Each new audio block demonstrates its named shape through composition rather than enumeration — a reader can read the shape off the prose without needing the label. Foreground/background mix structure made explicit via attenuation cues; designed audio flagged with SFX-design vocabulary; musical structure tied to scene emotional read.
+- **B2 wordless preserved.** Hospital Vigil II remains wordless after the diversity pass — the v3.6.4 example's narrative content (a wordless emotional beat between husband and unconscious wife) is preserved; the diversification works at the audio-mix level only, with a sustained cello carrying what dialog would otherwise carry.
+- **No new sub-skills, no new content arcs, no routing changes.** Surgical content polish only.
+
+Commit prefix: `docs: v3.6.5 — marketing-copy strip on MODELS-DEEP-REFERENCE.md + audio-block diversity pass on Seedance worked examples`
+
 ## v3.6.4 — 2026-05-03
 
 ### Added

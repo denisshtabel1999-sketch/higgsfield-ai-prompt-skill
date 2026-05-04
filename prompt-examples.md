@@ -231,8 +231,10 @@ practical light.
 
 Camera: Low tracking shot, parallel right, following at running pace.
 
-Audio: rapid breathing close to camera, sneakers slapping on wet concrete,
-distant footfalls echoing behind, a fluorescent ballast humming overhead, no
+Audio: foregrounded — her breath ragged and close to camera, sneakers
+hitting wet concrete with each stride right under the mic, the *snap* of
+impact when she lands the vault. Background drops back: a fluorescent
+ballast somewhere overhead, footfalls behind her thinned by distance, no
 music.
 ```
 
@@ -294,9 +296,11 @@ warm bedside lamp the only source of warm light.
 
 Camera: Locked-off medium close-up, no movement.
 
-Audio: heart monitor steady at low tempo, distant intercom paging in another
-ward, his breath catching once, the rustle of bedsheets when his hand
-tightens on hers, no music.
+Audio: a single sustained low cello note enters under the held silence —
+quiet at first, then swelling almost imperceptibly through the moment his
+composure breaks, holding under the cracked breath without resolving.
+Diegetic sound recedes beneath it: the heart monitor's tempo, a distant
+intercom, the rustle of bedsheets — present but pulled low in the mix.
 ```
 
 Continuation mode picks up at the final frame of the prior clip — the
@@ -361,9 +365,11 @@ warning labels half-readable on the walls.
 Camera: slow dolly-in following her drift, matching her pace, holding her
 in center frame.
 
-Audio: muffled breathing inside the helmet ring, the suit's life-support
-fan steady at low tempo, distant metal groans of the station's hull, the
-emergency strobe's relay clicking each cycle, no music.
+Audio: designed, not captured. The suit's life-support fan as a treated
+low drone with a 4Hz pulse under it. Hull groans constructed from layered
+metal-stress samples, processed for a hollow zero-g signature. The
+emergency strobe's relay click as a hard transient, foregrounded each
+cycle. Helmet breath EQ'd to the close, internal-mic position. No music.
 ```
 
 Reference-Based mode locks the EVA suit's wear and the character's face from
@@ -478,7 +484,11 @@ shallow depth of field.
 
 Camera: unchanged from source — slow push-in toward the mug.
 
-Audio: same as source — kettle whistling distant, ceramic on wood, no music.
+Audio: same as source — kitchen ambience as the primary content, layered:
+the low refrigerator hum two rooms over, faint traffic through a closed
+window, the air itself in a quiet morning kitchen. The kettle's distant
+whistle and the ceramic-on-wood touch sit inside the ambience, not on top
+of it. No music.
 ```
 
 Edit Shot mode is the targeted-patch tool. The prompt names exactly what to
@@ -607,9 +617,13 @@ windows, rain on the glass, conference table in soft focus behind her.
 Camera: slow crash-zoom in toward her face, settling on the eyes at
 mid-transformation, holding through the end state.
 
-Audio: distant rain on glass, the fluorescents' ballast hum dropping in
-pitch as the change begins, fabric stress, a low rising electric drone
-swelling under her transformation, breath held throughout, no music.
+Audio: her voice anchors the scene — a low controlled hum begins in her
+throat as the fluorescents flicker, soft and human at first. Through the
+mid-transformation it lowers in pitch, gains a second harmonic underneath,
+and resolves at the end as something other-than-human: a sustained tone
+the suit can no longer contain. Surrounding sound recedes: rain on glass,
+the ballast hum dropping with her, fabric stress under the expansion. No
+music.
 ```
 
 Transformation prompt mode requires an explicit midpoint — the seams
