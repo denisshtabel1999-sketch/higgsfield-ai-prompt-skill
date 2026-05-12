@@ -230,6 +230,22 @@
 | Reference Anchor | Cinema Studio system that locks character geometry across all shots |
 | Hero Frame | Key image generated before video to define visual tone, lighting, and composition |
 
+### Image Reference Notations — `@Image1` vs `<<<image_1>>>`
+
+Both notations refer to the same underlying @-reference mechanic; the bracket style
+is contextual to which surface is being addressed.
+
+- **`@Image1`** — the platform-side reference syntax used in actual prompts to the
+  Higgsfield generation engine. Capital `I`, no underscore, single `@`. Used across
+  `templates/` and most sub-skill prompt examples (e.g., `templates/02-product-ugc-showcase.md`,
+  `MODELS-DEEP-REFERENCE.md` § The Rule of 12). Pattern in prompts:
+  `@Image1 as the character`, `@Image2 as the background`.
+- **`<<<image_1>>>`** — the Seedance 2 Skill's internal explicit-reference notation,
+  used in user requests to the `docs/Seedance 2 Skill.md` bilingual EN+ZH prompt
+  director. Lowercase `image`, underscore, triple angle bracket. Recognized by the
+  Seedance Skill when typed in a user request, then mapped to the appropriate scene
+  element (per `docs/Seedance 2 Skill.md:178` § Image reference system).
+
 ---
 
 ## Micro-Expression Vocabulary

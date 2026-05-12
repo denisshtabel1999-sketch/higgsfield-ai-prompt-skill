@@ -1,5 +1,36 @@
 # Changelog
 
+## v3.7.1 — 2026-05-11
+
+### Added
+
+- **Video Reference Capability Surface** section in `skills/higgsfield-camera/SKILL.md` — new top-level H2 "Video Reference — What It Reads, and What It Can't" documenting what a `@Video` reference reads reliably vs. less reliably, the four tagging patterns by purpose (world / action energy / camera+production / voice+performance), the three hard limits, and the load-bearing rule "prompt wins on action, reference wins on texture and world feel." Pair-with-image rule for character identity added. Repo previously documented `@Video` usage in 8+ places but never the capability/limit boundary.
+  - Sub-bullet: one-line cross-link added in `skills/higgsfield-motion/SKILL.md` § @Video Reference as Primary Method pointing at the new capability surface.
+  - Sub-bullet: `SUB_SKILL_DESCRIPTIONS["higgsfield-camera"]` in `generate_user_guide.py` updated from `"Camera controls + One-Move Rule + Smart Mode"` → `"Camera controls + One-Move Rule + Smart Mode + @Video reference"` to reflect the new H2 in Section 22's sub-skill table. Length stays inside the existing column width (65 chars vs. longest existing entry at 70 chars — no PDF row wrap).
+- **Image Reference Notations disambig block** in `vocab.md` — new H3 "Image Reference Notations — `@Image1` vs `<<<image_1>>>`" under Platform Feature Vocabulary explaining `@Image1` as the platform-side reference syntax used in actual prompts vs. `<<<image_1>>>` as the Seedance 2 Skill's internal explicit-reference notation (per `docs/Seedance 2 Skill.md:178`). Both refer to the same underlying @-reference mechanic; bracket style is contextual to which surface is being addressed.
+
+### Changed
+
+- **`validate_user_guide.py` DEFAULT_BASELINE re-baselined** — `USER-GUIDE.pdf.baseline-v3.7.0` → `USER-GUIDE.pdf.baseline-v3.7.1`. (Note: the previous `DEFAULT_BASELINE` path at v3.7.0 time pointed at `USER-GUIDE.pdf.baseline-v3.6.5`, but that file was never committed and not present on disk at v3.7.1 release time. Phase 2D reconstructed the v3.7.0 PDF deterministically from the `v3.7.0` tag and used it as the rotation baseline.) Re-baseline is required because the `SUB_SKILL_DESCRIPTIONS` update changes the Section 22 `higgsfield-camera` row text — a substantive content diff per `validate_user_guide.py:48` ("Sub-skill row description changes (Section 22 second column)"). The re-baseline workflow is exactly the one anticipated in the v3.7.0 validator docstring lines 54-59 for intentional content updates.
+- **Frontmatter version bumps** — root `SKILL.md` 3.7.0 → 3.7.1; `skills/higgsfield-camera/SKILL.md` 3.0.0 → 3.1.0 (minor bump for new H2); `skills/higgsfield-models/SKILL.md` 3.0.1 → 3.0.2 (patch — child-doc `MODELS-DEEP-REFERENCE.md` Rule-of-12 citation, per v3.6.5 parent-tracks-child precedent at CHANGELOG L61). `skills/higgsfield-motion/SKILL.md` — `updated` field refreshed only, no version bump (one-line cross-link, per v3.6.4 pipeline precedent at CHANGELOG L107). All `updated` fields set to 2026-05-11.
+
+### Sourcing
+
+- **Video Reference Capability Surface** — sourced from File 07 part 2 of the 2026-05-11 `NEW DOCS_5_3_2026` audit (`/tmp/higgsfield-audit-2026-05-11/AUDIT.md` row 4, recommendation INTEGRATE — high value, low cost).
+- **Rule of 12 — ByteDance / BytePlus citation** added at the canonical Rule of 12 definition (`skills/higgsfield-models/MODELS-DEEP-REFERENCE.md` § The Rule of 12 — Asset Budget, line 274). Sources the 9-image / 3-video / 3-audio limit to official Seedance launch materials at `seed.bytedance.com`. Canonical-only placement: the 4 other repo mentions of "Rule of 12" are brief uses of a now-sourced term, not independent claims, and adding inline citations at each would partially reverse the v3.6.5 marketing-copy strip discipline. Forward compatibility: future limit updates have one source of truth to drift.
+- **Image Reference Notations disambig** — sourced from AUDIT.md topline observation 9 and Row 3 net-new content note.
+
+### Notes
+
+- **Additive-only release.** No restructuring of existing sections. No re-wording of pre-v3.7.1 content beyond the citation lines and the `SUB_SKILL_DESCRIPTIONS` entry refresh.
+- **No drift catalog items closed.** D3-D8 from the v3.7.0 deferred-content track remain open — File 07 part 2 is fresh scope not covered by D3-D8.
+- **`USER-GUIDE.pdf` regenerated** by `generate_user_guide.py` after the `SUB_SKILL_DESCRIPTIONS` update. Validator baseline rotated: v3.7.0 reconstructed in a worktree at the `v3.7.0` tag (deterministic regen per Path B refactor; `pdf.set_creation_date` pinned via `META['updated']` produces byte-equivalent output) and used as the rotation baseline. Layer 1 text-extract diff v3.7.0 → v3.7.1 produced one intentional substantive diff (Section 22 `higgsfield-camera` row text update); version/date deltas pattern-normalized. New baseline `USER-GUIDE.pdf.baseline-v3.7.1` and reconstructed `USER-GUIDE.pdf.baseline-v3.7.0` (kept as historical reference) committed to git this release — closing a v3.7.0 baseline-management gap surfaced during Phase 2D (the v3.6.5 baseline file referenced by `validate_user_guide.py:93` at v3.7.0 time was never committed and not present on disk at v3.7.1 release time).
+- **Baseline-management discipline closed.** Baseline files are now committed to git alongside the release that produced them, matching the existing tracking pattern for `USER-GUIDE.pdf` (tracked since v3.0.0). `validate_user_guide.py` docstring updated to note this. The "PDF tracks version" invariant from v3.7.0's Path B refactor now has a corresponding "baseline is tracked" invariant. This surprise cannot recur.
+- **`higgsfield-motion` `updated`-only refresh rationale.** The one-line cross-link pointing at the new capability surface in `higgsfield-camera` does not change what the `higgsfield-motion` sub-skill teaches — the @Video Reference section there remains the action-specific primary method, with a pointer to the capability surface for broader context. Per the v3.6.4 pipeline precedent (CHANGELOG L107), single one-line cross-links are tracked via `updated`-date refresh without a version bump.
+- **No sub-skill content moved or removed. No routing changes. No new sub-skills.**
+
+Commit prefix: `feat: v3.7.1 — Video Reference Capability Surface + Rule-of-12 ByteDance citation + @image syntax disambig`
+
 ## v3.7.0 — 2026-05-04
 
 ### Changed

@@ -67,7 +67,7 @@ SUB_SKILL_DESCRIPTIONS = {
     "higgsfield-prompt":      "MCSLA formula + Seedance 2.0 best practices",
     "higgsfield-image-shots": "Cinematic image prompting",
     "higgsfield-models":      "Model selection guide + CS 3.0 comparison",
-    "higgsfield-camera":      "Camera controls + One-Move Rule + Smart Mode",
+    "higgsfield-camera":      "Camera controls + One-Move Rule + Smart Mode + @Video reference",
     "higgsfield-motion":      "Motion presets + intent-first choreography",
     "higgsfield-style":       "Visual styles + One Style Anchor Rule",
     "higgsfield-soul":        "Soul ID + Soul Cast 3.0 + Soul Cinema (CS 3.0/3.5 default image model)",
