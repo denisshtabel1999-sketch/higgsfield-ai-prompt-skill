@@ -58,6 +58,11 @@ work item for INTENTIONAL content updates — those edits should land
 through deliberate hand edits to generate_user_guide.py, then this
 script gets re-baselined to match the new shipped PDF.
 
+Baseline files are committed to git alongside the release that produced
+them, matching the existing tracking pattern for USER-GUIDE.pdf. The
+"PDF tracks version" invariant has a corresponding "baseline is tracked"
+invariant.
+
 VALIDATION LAYERS
 -----------------
 Layer 1 (text-extract diff): primary check. Uses pdftotext if
@@ -90,7 +95,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent
-DEFAULT_BASELINE = REPO / "USER-GUIDE.pdf.baseline-v3.6.5"
+DEFAULT_BASELINE = REPO / "USER-GUIDE.pdf.baseline-v3.7.1"
 DEFAULT_CANDIDATE = REPO / "USER-GUIDE.pdf"
 
 
