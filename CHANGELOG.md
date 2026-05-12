@@ -1,5 +1,38 @@
 # Changelog
 
+## v3.7.2 — 2026-05-11
+
+### Added
+
+- **Product Reference Sheet** as the 6th reference-sheet type in `skills/higgsfield-cinema/SKILL.md` § Reference Sheet Types. New H3 sub-section `### Product Reference Sheet` placed between the existing `### Palette / Mood Sheet` block and the `### The Reference Sheet Family` summary table — the structural parallel slot, since prose order now matches table order. Section content:
+  - Sub-bullet: 7-part prompt scaffold — Identity Lock + Branding Lock + Layout + Background + Realism + Camera + Restrictions. Parallel to existing reference-sheet templates but adapted for products (no character, no location-as-architecture; the product itself is the locked subject). Section ordering inside the H3 follows the source material's order: locks → composition → surface → capture → negative space.
+  - Sub-bullet: Multi-view product layout — eight orthographic views (front / back / left / right / top / bottom / 3-quarter) plus macro close-ups. Parallel to the Five-View Location Sheet at `skills/higgsfield-cinema/SKILL.md:575` but adapted for product geometry — eight views vs. five because the camera is closer and the geometry IS the subject.
+  - Sub-bullet: **Material Realism** block — reusable six-axis template (raised structure, tight density, visible direction, micro shadowing, surface compression following form, curvature integration) populated per material. Generalized so the same scaffold carries to leather / knit / satin / brushed metal / suede; embroidery populates the six axes for the hat worked example below as one instance of the template.
+  - Sub-bullet: `#DCDCDC` light gray background + shadowless lighting + no gradients + no reflections — product-photo studio convention. Specified as a four-constraint package because the `#DCDCDC` value alone still leaves the model room for atmospheric noise. Factual prescription, lands as-is.
+  - Sub-bullet: Canon EOS R5 + RF 100mm f/2.8L Macro IS USM (f/8, ISO 100) — default camera package for Product Reference Sheets. Utilitarian technical spec, not promotional positioning (consistent with v3.6.5 marketing-strip discipline, which targeted "class-leading" / "best-in-class" language, not concrete instrument specs). Substitution guidance included for shallow-DoF macro (f/4) and oversized-product (RF 50mm) cases.
+  - Sub-bullet: **Hat worked example** — black baseball cap with embroidered wordmark, demonstrating the full 7-part scaffold with the Material Realism block populated by embroidery vocabulary (raised thread structure, tight stitch density, visible thread direction, micro shadowing in stitch valleys, fabric compression around stitching, curvature integration following the pre-curved crown). Formatted as `#### Hat — Worked Example` per the existing H4 sub-category pattern at `skills/higgsfield-cinema/SKILL.md:282-313`.
+  - Sub-bullet: One row appended to the Reference Sheet Family summary table at `skills/higgsfield-cinema/SKILL.md:700` — `| Product | Product geometry, branding placement, material/surface, multi-view layout | This section |`. Five other table rows unchanged.
+  - Sub-bullet: One-phrase additive amendment to the section intro's axis enumeration at `skills/higgsfield-cinema/SKILL.md:622` — append `, or product` to the existing `identity, architecture, motion behavior, wardrobe, or palette` list. Same kind of edit as v3.7.1's `SUB_SKILL_DESCRIPTIONS` line refresh: enumeration update to reflect new content, not a re-wording of an existing claim. Bare axis name to match the pattern of the other five entries.
+
+### Changed
+
+- **Frontmatter version bumps** — root `SKILL.md` 3.7.1 → 3.7.2; `skills/higgsfield-cinema/SKILL.md` 3.2.0 → 3.3.0 (minor bump for new H3 sub-section + new table row, matching v3.7.1 `higgsfield-camera` 3.0.0 → 3.1.0 precedent for content additions). `updated` fields set to 2026-05-11 (root SKILL.md `updated` unchanged at 2026-05-11 — same day as v3.7.1).
+- **`validate_user_guide.py` DEFAULT_BASELINE re-baselined** — `USER-GUIDE.pdf.baseline-v3.7.1` → `USER-GUIDE.pdf.baseline-v3.7.2`. Re-baseline required because of the version-string delta cascade through deflate-compressed PDF object streams (Layer 1 text-extract content is byte-identical after pattern normalization — see Notes). Baseline-management discipline from v3.7.1: the new `USER-GUIDE.pdf.baseline-v3.7.2` is committed to git alongside this release.
+
+### Sourcing
+
+- **Product Reference Sheet** — sourced from File 06 (`PRODUCT REFERENCE SHEET PROMPTS.txt`, ~395 lines) and File 07 Part 1 (slides 1–6 of `Reference Workflow_.pdf`) of the 2026-05-11 `NEW DOCS_5_3_2026` audit (`/tmp/higgsfield-audit-2026-05-11/AUDIT.md` row 3, recommendation INTEGRATE — strong fit with drift catalog item D7's Reference Sheet Types surface, extending it with a Product axis). D7's other items (v3.6.0 Reference Sheet Types expansion + v3.6.4 piano test / Action Design / Morph-Cut breathing room) were already reflected in the live cinema SKILL.md at v3.7.1 release time and are unaffected. Paraphrased content only per File 06 IP discipline — short technical phrases (camera spec, hex color, sheet type name, the six Material Realism axis labels, embroidery realism vocabulary) are factual prescriptions, not paraphrasable, and land as-is.
+
+### Notes
+
+- **Deferred from File 06 to a later release.** (a) The "Automatic Prompt Creator" meta-prompt — a reusable LLM-side prompt-conversion assistant that takes the global template + N images and outputs a product-specific final prompt — is qualitatively a new repo pattern (meta-prompts that build other prompts) and its right home is not yet decided (candidates: `higgsfield-prompt`, `higgsfield-assist`, or a dedicated sub-section of `higgsfield-cinema`). Deferring lets v3.7.2 stay single-arc. (b) The dress worked example from File 06 — hat alone demonstrates the full 7-part scaffold with the Material Realism block populated for embroidery; a second example would be additive density without semantic gain. Both candidates for a future content release.
+- **Additive-only release.** No restructuring of pre-v3.7.2 content. No re-wording beyond the one-phrase axis-enumeration append at `skills/higgsfield-cinema/SKILL.md:622` (treated same as v3.7.1's `SUB_SKILL_DESCRIPTIONS` refresh — enumeration extension, not a reword of any existing claim). Single sub-skill touched: `higgsfield-cinema`. No new sub-skills, no routing changes, no edits to other skill files. `vocab.md` untouched — it does not enumerate reference sheet types, so the new Product type doesn't surface there.
+- **Drift catalog status.** D7 extended with the Product axis (Product Reference Sheet content now in repo). D3 / D4 / D5 / D6 / D8 remain open.
+- **`USER-GUIDE.pdf` regenerated** by `generate_user_guide.py`. Build-time invariant passes trivially (`SUB_SKILL_DESCRIPTIONS` keys unchanged — cinema's editorial summary doesn't enumerate sheet types, so adding a 6th sheet doesn't tip the entry, so no edit needed). Validator baseline rotated: v3.7.1 → v3.7.2. Layer 1 text-extract diff prediction: zero substantive content diffs (Section 22 cinema row text stays byte-identical because no `SUB_SKILL_DESCRIPTIONS` change); only version-string deltas (v3.7.1 → v3.7.2) which the validator's normalization patterns absorb. Date string deltas: zero (same-day release as v3.7.1). Layer 2 binary diff: expected to cascade through deflate-compressed object streams as it did v3.7.0 → v3.7.1.
+- **No sub-skill content moved or removed. No routing changes. No new sub-skills.**
+
+Commit prefix: `feat: v3.7.2 — Product Reference Sheet as 6th reference-sheet type (D7 net-new Product axis)`
+
 ## v3.7.1 — 2026-05-11
 
 ### Added
