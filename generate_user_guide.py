@@ -82,7 +82,7 @@ SUB_SKILL_DESCRIPTIONS = {
     "higgsfield-cinema":      "Cinema Studio 2.5 + 3.0 + 3.5 (Soul Cast, Image Mode, Cinematic models)",
     "higgsfield-recall":      "Pre-generation memory check",
     "higgsfield-vibe-motion": "Vibe Motion / motion graphics",
-    "higgsfield-seedance":    "Seedance 2.0 prompt director + content-filter preflight",
+    "higgsfield-seedance":    "Seedance 2.0 prompt director + working modes + content-filter preflight",
     "higgsfield-workspaces":  "Workspace-first decision layer",
 }
 
