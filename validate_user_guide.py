@@ -95,7 +95,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent
-DEFAULT_BASELINE = REPO / "USER-GUIDE.pdf.baseline-v3.7.2"
+DEFAULT_BASELINE = REPO / "USER-GUIDE.pdf.baseline-v3.7.3"
 DEFAULT_CANDIDATE = REPO / "USER-GUIDE.pdf"
 
 
