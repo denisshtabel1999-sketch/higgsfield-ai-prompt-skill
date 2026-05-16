@@ -172,6 +172,27 @@
 - Intimacy: Dolly In, shallow depth of field
 - Chaos: FPV Drone, Handheld, fast cuts
 
+### Emotion as Visible Behavior — Channels
+
+Eight named channels through which emotion becomes visible to the
+camera. Use these to decompose abstract emotion language ("she is
+afraid," "he is angry") into observable physical behavior the model
+can stage.
+
+- **Breath** — rate, depth, hold, exhale character
+- **Eye behavior** — fixation, blink rate, gaze direction
+- **Jaw tension** — clenched, slack, working, set
+- **Loss of focus** — gaze drifting, attention slipping, response delay
+- **Scanning pattern** — eye/head sweep direction, tracked target
+- **Delayed recovery** — lag between stimulus and adjustment back to baseline
+- **Control attempt** — visible suppression or regulation effort
+- **Emotional residue after the peak** — what reads on the body after the dominant beat
+
+The Micro-Expression Vocabulary section below catalogs named endpoint
+expressions (Suppressed Smile, Cold Calculation, etc.) — those are
+combinations of these channels. The channels above are the substrate;
+the named expressions are what the substrate produces.
+
 ---
 
 ## Environment & Atmosphere Vocabulary
