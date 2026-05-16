@@ -95,7 +95,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent
-DEFAULT_BASELINE = REPO / "USER-GUIDE.pdf.baseline-v3.7.4"
+DEFAULT_BASELINE = REPO / "USER-GUIDE.pdf.baseline-v3.7.5"
 DEFAULT_CANDIDATE = REPO / "USER-GUIDE.pdf"
 
 
@@ -132,7 +132,51 @@ def normalize(text):
     return text
 
 
+# Empirical column ceiling for SUB_SKILL_DESCRIPTIONS entries in the
+# USER-GUIDE Section 22 sub-skill table. Verified at v3.7.4 against the
+# 115mm Helvetica 9pt rendered column. Two entries (higgsfield-cinema,
+# higgsfield-seedance) currently sit at the ceiling; further extension
+# overflows the column.
+SUB_SKILL_DESCRIPTION_CEILING = 71
+
+
+def validate_sub_skill_descriptions():
+    """Layer 0: assert each SUB_SKILL_DESCRIPTIONS entry fits the column ceiling.
+
+    Source-data validation runs before baseline/candidate comparison so an
+    overflow entry fails fast rather than silently rendering as wrapped or
+    clipped text in the regenerated PDF (which the baseline diff would not
+    catch as a regression). Prevents the v3.7.3->v3.7.4 inherited-error
+    class where corrected char-count math surfaced only at the next release.
+    """
+    try:
+        from generate_user_guide import SUB_SKILL_DESCRIPTIONS
+    except ImportError:
+        print("[Layer 0] SUB_SKILL_DESCRIPTIONS check: ENVIRONMENT ERROR")
+        print("  Cannot import generate_user_guide. Run validator from repo root.")
+        sys.exit(2)
+
+    overflow = [
+        (name, len(desc), desc)
+        for name, desc in SUB_SKILL_DESCRIPTIONS.items()
+        if len(desc) > SUB_SKILL_DESCRIPTION_CEILING
+    ]
+    if overflow:
+        print("[Layer 0] SUB_SKILL_DESCRIPTIONS check: OVERFLOW DETECTED")
+        print(f"  Ceiling: {SUB_SKILL_DESCRIPTION_CEILING} chars (empirical, v3.7.4 verified)")
+        for name, length, desc in overflow:
+            print(f"  {name}: {length} chars  '{desc}'")
+        sys.exit(1)
+    longest = max(len(v) for v in SUB_SKILL_DESCRIPTIONS.values())
+    print("[Layer 0] SUB_SKILL_DESCRIPTIONS check: PASS")
+    print(f"  All {len(SUB_SKILL_DESCRIPTIONS)} entries <= {SUB_SKILL_DESCRIPTION_CEILING} chars (longest: {longest}).")
+
+
 def main():
+    # Layer 0: source-data check before baseline/candidate comparison.
+    validate_sub_skill_descriptions()
+    print()
+
     baseline_path = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_BASELINE
     candidate_path = Path(sys.argv[2]) if len(sys.argv) > 2 else DEFAULT_CANDIDATE
 

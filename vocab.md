@@ -221,6 +221,22 @@ the named expressions are what the substrate produces.
 - Wilderness: raw, unpredictable, vast
 - Fantasy: designed, non-real, heightened
 
+### World Through Recurrence
+
+Eight named substrate axes through which a world becomes legible
+to the audience across multiple shots. Use these to identify what
+should repeat consistently across scenes — a world emerges from
+what recurs, not from what gets explained.
+
+- **Recurring spaces** — locations that return, space-types echoed across acts
+- **Light behavior** — how light enters, falls, decays in repeated patterns
+- **Silence** — the texture and timing of quiet, what gets withheld between beats
+- **Materials** — surface vocabulary, substance choices, tactile signature
+- **Architecture** — corridor logic, threshold use, the way built form constrains motion
+- **Props** — physical objects that reappear with consistent meaning
+- **Emotional conditions** — recurring affective states, dread density, what lingers after a beat resolves
+- **Camera distance / rhythm** — proximity choices, when to step back, pacing patterns
+
 ---
 
 ## Audio / Sound Vocabulary (for Kling 3.0 and audio-capable models)
@@ -270,6 +286,9 @@ is contextual to which surface is being addressed.
 ---
 
 ## Micro-Expression Vocabulary
+
+The Emotion as Visible Behavior — Channels section above catalogs the
+eight substrate channels these endpoint expressions decompose into.
 
 Performance directions for Soul Cast actors and character prompting:
 

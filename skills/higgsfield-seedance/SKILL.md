@@ -4,8 +4,8 @@ description: "Rewrites scene descriptions using professional cinematography lang
 user-invocable: true
 metadata:
   tags: [higgsfield, seedance, seedance-2.0, seedance-pro, content-filter, prompt, director, flagged]
-  version: 1.3.0
-  updated: 2026-05-15
+  version: 1.4.0
+  updated: 2026-05-16
   parent: higgsfield
 ---
 
@@ -214,6 +214,10 @@ distinguishing marks), wardrobe (every garment and accessory), environment
 emotional carryover (the state the character was in at the last frame — tense,
 exhausted, alert — should still read on their body in the opening of the
 continuation).
+
+> For the eight named substrate channels that "emotional carryover"
+> decomposes into, see `../../vocab.md` § Emotion as Visible Behavior —
+> Channels.
 
 ### Example
 
@@ -759,10 +763,10 @@ goal is surgical edits, think like an editor, not a full
 regenerator. Freeze the parts that must remain stable. Isolate the
 parts that must change. Then make the instruction local and explicit.
 
-This is also the conceptual root of the Repair Skeleton in §
-Two-Layer Prompt Authoring above: the preserve / change split is the
-prompt-side enactment of the editor-not-regenerator stance, the same
-discipline VideoPilot's UI primitives express at the interface level.
+This is also the conceptual root of the Repair Skeleton: the
+preserve / change split is the prompt-side enactment of the
+editor-not-regenerator stance, the same discipline VideoPilot's UI
+primitives express at the interface level.
 
 ---
 
@@ -889,6 +893,47 @@ shot-by-shot if multi-cut. This is the main block.]
 
 For the full bilingual EN+ZH director output format (used in Seedance's
 web UI), see the extended reference at `../../docs/Seedance 2 Skill.md`.
+
+---
+
+## Post-Clip Decisions
+
+When a generated clip raises questions around itself, testing
+becomes narrative work — not "is it good?" but "what does it do?"
+and "what comes after?" The diagnostic below asks four scene-function
+questions; the decision tree maps the answers to next-shot types.
+
+### The Four Questions
+
+After any strong clip, ask these four in order. They surface what
+the clip is doing in the episode and what should come next.
+
+1. What function does this scene have?
+2. What is missing for it to feel connected?
+3. What shot would make the connection readable?
+4. Is the next step continuation, bridge, contrast, or reset?
+
+These questions are scoped to the next move, not to "solving the
+whole episode." The narrower scope is what keeps them practical.
+
+### Next-Shot Decision Tree
+
+The right question is not "what is the coolest next shot?" but "what
+problem does the episode have right now?" Map the problem to a shot
+type:
+
+- **Strong but isolated** → continuation or before/after
+- **Two scenes do not connect** → bridge
+- **Spatial logic unclear** → geography clarification
+- **Structure works but feeling weak** → close-up or reaction insert
+- **Something broken** → targeted repair
+
+The next shot is chosen by function, not by excitement.
+
+> Note: "continuation," "bridge," and "targeted repair" here name
+> next-shot types decided post-generation. "Continuation," "Bridging,"
+> and "Repair" in § Working Modes above name per-clip intent during
+> composition — different lifecycle phase, different decision.
 
 ---
 
