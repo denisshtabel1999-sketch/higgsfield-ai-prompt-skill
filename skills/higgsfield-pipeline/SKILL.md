@@ -24,6 +24,204 @@ This skill documents the key chains and how to prompt for each stage.
 
 ---
 
+## Building Complete AI Projects — The 10-Step Methodology
+
+The Core Insight above answers *why* you chain tools. The next
+question is *how to plan the project* before any tool is touched.
+Most people skip planning and start prompting straight from a
+creative impulse — a generation here, a clip there, hoping the
+pieces will connect. They don't. A project that's planned at the
+script and bible level lands consistently; a project assembled
+prompt-by-prompt drifts on character, style, and continuity within
+three or four generations.
+
+This section documents a 10-step methodology for building complete
+AI projects — from idea through finished sequence — that sits
+upstream of the Master Production Chain below. Use these 10 Steps
+as a planning discipline; use Pipelines A-E to execute the
+tool-level chain once your project plan is locked. The closing §
+Simple Workflow gives the imperative-action version of the same 10
+Steps if you want the execution recipe before the principles.
+
+### Step 01 — Start With the Project, Not the Prompt
+
+Before writing a single prompt, define what you are building. The
+AI cannot read your intent; if you skip this step the model fills
+in the gaps with whatever the prompt happens to suggest, and the
+project drifts within the first few generations.
+
+Lock these nine fields before any tool is touched:
+
+- Project type
+- Main subject
+- Visual style
+- Scene goal
+- Audience
+- Mood
+- Length
+- Setting
+- What must stay consistent
+
+The last field is the load-bearing one. If you don't know what
+must stay consistent across the project, every other field can be
+locked and the result will still feel disjointed.
+
+### Step 02 — Build a Master Script
+
+A Master Script is the project blueprint — the single document
+that keeps every scene connected to the same goal. It does not
+have to be a Hollywood screenplay; it just needs to explain the
+full idea clearly.
+
+> **Master Script disambiguation.** "Master Script" in this
+> context means the structured project document, not a screenplay.
+> The source explicitly notes "it does not have to be a Hollywood
+> screenplay; it just needs to explain the full idea clearly."
+> This is distinct from Hollywood screenplay craft (slug lines,
+> action lines, character cues, transitions) — that's a different
+> discipline and is not in this skill's scope.
+
+The Master Script should include:
+
+- The story or concept
+- The scene order
+- The main characters or products
+- The visual style
+- The camera rules
+- The setting
+- The emotional tone
+- The continuity rules
+- What should never happen
+
+Without a Master Script, each prompt becomes its own random
+island. With one, every prompt belongs to the same project —
+characters carry between scenes, the visual style holds, and the
+negative rules ("what should never happen") stay out of the
+output.
+
+### Step 03 — Use GPT as Your Creative Assistant
+
+Do not use GPT like a magic button. Use it like a creative team
+member. GPT plays five distinct roles in the project pipeline:
+
+- **Concept Builder** — turns a rough idea into a structured
+  concept
+- **Script Writer** — drafts the Master Script from the concept
+- **Shot List Planner** — breaks the script into scene-by-scene
+  shot lists
+- **Prompt Refiner** — turns each shot into image or video prompt
+  text
+- **Problem Solver** — diagnoses failed generations and rewrites
+  the offending prompt
+
+The key is **staging**. Do not ask GPT to do everything at once.
+Ask for the project structure first. Then the scenes. Then the
+prompts. Then the revisions. The output quality at every stage
+depends on the input quality of the prior stage; cascading the
+work in order gives you control over each handoff.
+
+> **In-platform alternative.** Higgsfield has an in-platform GPT-5
+> copilot (Higgsfield Assist at higgsfield.ai/chat) trained
+> specifically on Higgsfield's tools and workflows. For quick
+> in-platform prompt generation and platform-navigation questions,
+> see `../higgsfield-assist/SKILL.md`. For upstream project
+> staging across multiple sessions, an external GPT (Claude,
+> ChatGPT) running this 10-step methodology is the better fit
+> because state carries across the full project, not just the
+> current platform session.
+
+### Step 04 — Separate the Script From the Prompt
+
+The script is what happens. The prompt is how the AI shows it.
+These are two different artifacts that serve two different
+purposes — keep them in separate documents, and don't let
+prompt-shaped instructions leak into the script.
+
+A script line might read:
+
+> "She walks into the room and realizes something is wrong."
+
+The same beat, as a prompt, reads:
+
+> "A woman slowly enters a dim apartment from the hallway. Camera
+> stays in front of her at chest height, tracking backward as she
+> steps forward. Her eyes move toward an overturned chair and
+> broken lamp. Warm hallway light behind her, cold blue window
+> light across the room. Her face tightens as she realizes
+> something is wrong."
+
+The prompt decomposes the beat into four production-instruction
+categories:
+
+- **Camera Notes** — wide shot, eye-level, shallow depth of field,
+  focus on subject's expression
+- **Lighting Direction** — dim, cinematic, cool blue ambient from
+  window, single warm lamp in corner
+- **Subject Movement** — slow, hesitant walk, pauses mid-step,
+  tense posture, hand to mouth
+- **Environment Detail** — cluttered, atmospheric, dust motes,
+  shadows in corners, sense of foreboding
+
+The script gives story. The prompt gives visual instructions. You
+need both, in separate documents, with the script feeding the
+prompt rather than collapsing into it.
+
+> **Separation rule axis distinction.** This is the project-level
+> separation — script (story) from prompt (AI instruction). For
+> the prompt-level separation within a single shot — Identity (who
+> is in frame) from Motion (what they do and how the camera moves)
+> — see `../higgsfield-prompt/SKILL.md` § Identity vs. Motion
+> Separation Rule and `../higgsfield-soul/SKILL.md` § Identity vs.
+> Motion Separation. Different axes of the same overall
+> composition problem; both apply.
+
+### Step 05 — Create a Project Bible
+
+A Project Bible is a single document that locks in the rules of
+the project — character appearance, environment, style, what must
+stay consistent, what must never appear. It is especially
+important for any project with multiple scenes, because
+consistency comes from repetition and clear rules, not from the AI
+inferring intent.
+
+The Project Bible should lock in:
+
+- Character appearance
+- Wardrobe
+- Hair
+- Color palette
+- Location
+- Lighting style
+- Camera style
+- Tone
+- Props
+- Negative rules
+- Continuity rules
+
+Three rules of thumb make a Project Bible work in practice:
+
+- If your character is supposed to look the same every time,
+  describe them the same way every time.
+- If your product is the focus, make sure the product stays the
+  focus.
+- If your scene takes place in one location, do not let the AI
+  redesign the room every shot.
+
+> **Project Bible as upstream source-of-truth.** The Project Bible
+> lives in your own files alongside the Master Script — it's the
+> document you maintain across the project. Two common downstream
+> realizations of the Bible inside Higgsfield: (i) the Character
+> section feeds into a Soul ID character sheet, see
+> `../higgsfield-soul/SKILL.md` § Character Sheet Creation for the
+> multi-angle reference approach; (ii) Characters, Locations, and
+> Props feed into Cinema Studio's @ Elements system, see
+> `../higgsfield-cinema/SKILL.md` § Elements System for the
+> `@CharacterName` / `@LocationName` / `@PropName` workflow. The
+> Bible is the upstream artifact; the Soul ID sheet and Cinema
+> Studio Elements are tool-side realizations of it.
+
+---
+
 ## The Master Production Chain
 
 This is Higgsfield's complete cinematic workflow — the chain used for short films,
