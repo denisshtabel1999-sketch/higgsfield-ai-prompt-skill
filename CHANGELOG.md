@@ -1,5 +1,155 @@
 # Changelog
 
+## v3.7.6 — 2026-05-17
+
+Mega-release. Co-headlined: C-arc (Building Complete AI Projects 10-Step Methodology) + G2 (GPT Image 2 flagship integration) + DISCIPLINE.md (cross-cutting discipline patterns meta-arc) + v3.7.5-audit-gap closeout (9 gaps shipped; 2 dropped; 2 deferred). Largest release in repo history by line count and surface count. Second exception to harder-single-arc commitment after v3.7.5 backlog closeout — co-headlined by explicit Peter decision at Phase 1 planning stage, not single-arc by accident.
+
+### Building Complete AI Projects — The 10-Step Methodology (Steps 01-05)
+
+New H2 `## Building Complete AI Projects — The 10-Step Methodology` in `skills/higgsfield-pipeline/SKILL.md`, placed between § The Core Insight and § The Master Production Chain. Five H3 sub-sections for Steps 01-05:
+
+- **Step 01 — Start With the Project, Not the Prompt** — 9-field project basics list (Project type / Main subject / Visual style / Scene goal / Audience / Mood / Length / Setting / What must stay consistent) verbatim
+- **Step 02 — Build a Master Script** — 9-item contents list verbatim + disambiguation blockquote per v3.7.5 § Post-Clip Decisions precedent ("Master Script" = structured project document, not Hollywood screenplay; source quote "it does not have to be a Hollywood screenplay; it just needs to explain the full idea clearly" shipped verbatim)
+- **Step 03 — Use GPT as Your Creative Assistant** — 5 named GPT tile roles verbatim (Concept Builder / Script Writer / Shot List Planner / Prompt Refiner / Problem Solver) + GPT-in-stages framing + cross-link to `higgsfield-assist` for in-platform GPT-5 copilot alternative
+- **Step 04 — Separate the Script From the Prompt** — 4 production-instruction categories verbatim (Camera Notes / Lighting Direction / Subject Movement / Environment Detail) + cross-link to `higgsfield-prompt` and `higgsfield-soul` § Identity vs Motion Separation as different-axis separation rule
+- **Step 05 — Create a Project Bible** — 11-item lock-in list verbatim (Character appearance / Wardrobe / Hair / Color palette / Location / Lighting style / Camera style / Tone / Props / Negative rules / Continuity rules) + 3 rules of thumb verbatim + forward cross-link to `higgsfield-soul` § Character Sheet Creation and `higgsfield-cinema` § Elements System as downstream realizations of the upstream Bible artifact
+
++198 lines in PR #18.
+
+### Building Complete AI Projects — The 10-Step Methodology (Steps 06-10 + Simple Workflow)
+
+Continuation of the new H2 from 2a. Six new H3 sub-sections completing the 10-step methodology:
+
+- **Step 06 — Give Every Scene One Job** — 6 scene purposes verbatim (Introduce the character / Show the location / Build tension / Reveal the product / Create emotion / Deliver the action — union-deduped across deck visual + bullet list + prose surfaces per cleaner-phrasing-wins precedent) + 6-question scene-prompt checklist verbatim + cross-link to `higgsfield-prompt` § One Action Per Scene as different unit of decomposition
+- **Step 07 — Use Prompt Modules** — 7-module prose taxonomy verbatim (Character identity / Camera / Lighting / Style / Motion / Negative prompt / Continuity blocks) + worked camera-block example verbatim + cross-link with alias note to `higgsfield-soul` / `higgsfield-prompt` Identity-Motion blocks (finer-grained sibling framing — Identity Block ≡ Character identity block)
+- **Step 08+09 — Fix Failures + Protect What Worked** — consolidated section per Phase 1b resolution (Iteration Rule + 6-Pass Diagnostic in `higgsfield-prompt` provides full discipline; 2b ships compact section naming the three rhetorical handles: "make it better" anti-pattern, 80% rule, "every failure should become a new rule" framing)
+- **Step 10 — Build the Project in Passes** — 8 named passes verbatim (Concept / Project script / Scene breakdown / Shot list / Image prompts / Video prompts / Review results / Fix and finalize) + cross-link forward to § Master Production Chain + § Pipeline Decision Guide
+- **Simple Workflow — Execution Recipe** — 10 imperative steps verbatim from both sources + cross-link at step 7 ("Generate inside Higgsfield") to § Pipeline Decision Guide for chain choice
+- **Build With Purpose** — closing prose verbatim, paragraph form ("The power is not in one perfect prompt. The power is in the workflow.")
+
++155 lines in PR #19.
+
+### Seedance audio + runtime + density coverage
+
+Three audit-gap closeouts (G4 + G6 + G12) — Seedance-side discipline content across `higgsfield-audio` and `higgsfield-seedance`. All three are independent-re-document gaps from v3.7.5 Joey-bundle / shotlist-bundle audit; no source-verbatim items.
+
+- **G4 — Diegetic-only audio convention for Seedance prompt body** in `skills/higgsfield-audio/SKILL.md` § Seedance 2.0 — callout distinguishes "BGM is a valid audio LAYER (model capability)" from "diegetic-only is a prompt-body authoring DISCIPLINE" with cross-link to existing § The Four Audio Layers. Two reasons the discipline matters even when BGM is supported (score descriptors underdetermine generation; timestamp-anchoring + remove-all-music-tokens pattern generalized to all Seedance prompts).
+- **G6 — Runtime arithmetic discipline for multi-shot Seedance prompts** in `skills/higgsfield-seedance/SKILL.md` § Output Format — new H3 documenting triple-redundant runtime (title + meta header + per-shot timing labels) with arithmetic-must-equal-total rule and "always ask user for runtime, never default" hard rule.
+- **G12 — Shot density heuristic for multi-scene Seedance prompts** in `skills/higgsfield-seedance/SKILL.md` § Output Format — new H3 documenting "~1 prompt per 4-5 shot rows" project-derived empirical starting heuristic, 5 group-rows conditions, 3 split-row triggers, plus explicit derivation caveat ("project-derived empirical observation, not platform-enforced").
+
++68 lines in PR #20 (+22 audio, +46 seedance).
+
+### Prompt + Camera output rules + emotion discipline
+
+Three audit-gap closeouts (G7 + G9 + G10) — prompt-authoring discipline across `higgsfield-prompt` and `higgsfield-camera`. Four Edit operations (G9 ships with paired cross-link callout in `higgsfield-prompt` § Identity vs Motion).
+
+- **G7 — No-aspect-ratio-in-prompt-body universal rule** in `skills/higgsfield-prompt/SKILL.md` § Common Prompt Mistakes — new table row codifying the existing pattern (aspect ratio belongs in the UI / output-format header, not in the prompt body; describe framing in plain language like "full body" / "chest-up" / "wide establishing" not numerical ratios).
+- **G9 — Camera-Emotion Sync hard rule** in `skills/higgsfield-camera/SKILL.md` — new H2 § Camera-Emotion Sync — Movement per Focal Character Emotion placed after § Combining Camera Controls. 6-emotion movement-to-camera-prescription map (Anger / Calm / Sadness / Shock / Action / Final beat) + § Emotional arcs within a single shot H3 (opening / transition / closing phase pattern) + back-cross-link to G10 for emotion-naming discipline. Mapping pairs are real-world cinematography practice re-documented in higgsfield voice.
+- **G10 — Generic-Emotion Decomposition + "which kind of X?" template** in `skills/higgsfield-prompt/SKILL.md` — new H2 (not H3 per Phase 1c spec; see catch #14 instance 4 below). "Never leave a generic emotion in a prompt" rule + decompose-by-muscle / breath / eyes / skin pattern + worked "which kind of surprise?" 4-variant clarification template (Light positive / Shock / Disbelief / Surprise-with-joy) + cross-link to `higgsfield-soul` § Micro-Expressions for preset library alternative.
+- **G9 paired cross-link callout** in `skills/higgsfield-prompt/SKILL.md` § Identity vs Motion Separation Rule — forward link to G9 ("the *quality* of camera motion tracks emotion") + back-link to G10.
+
+Bidirectional cross-link chain established: `higgsfield-prompt` § Generic-Emotion Decomposition ↔ `higgsfield-camera` § Camera-Emotion Sync ↔ `higgsfield-prompt` § Identity vs Motion ↔ `higgsfield-soul` § Micro-Expressions.
+
++95 lines in PR #21 (+50 prompt, +45 camera).
+
+### Soul character sheet single-prompt + Pipeline spatial blocking
+
+Two audit-gap closeouts (G3 + G11) — Soul + Pipeline discipline. Two Edit operations across two files.
+
+- **G3 — Single-prompt 6-panel character sheet (3×2 grid)** in `skills/higgsfield-soul/SKILL.md` — new H3 under existing § Character Sheet Creation. Alternative to multi-step assembly: one prompt → one 16:9 image → 3×2 grid with 6 labeled panels (Front body / 3/4 turn / Back body / Waist-up portrait / Hands detail close-up / Face detail close-up). Identity-locking rationale: single-pass generation prevents panel-to-panel drift.
+- **G11 — Top-down spatial-blocking schema for multi-character scenes** in `skills/higgsfield-pipeline/SKILL.md` — new H2 § Spatial Blocking — Top-Down Schema for Multi-Character Scenes between § Working Practices and § Pipeline Decision Guide. 3 when-to-draw triggers verbatim (2+ characters / key prop on specific surface / complex camera geometry) + 6 what-goes-on-schema items verbatim (room outline / character positions / eyelines / props / distances / surface labels) + ASCII top-down schema example (R8 mitigation: runtime-portable, no `visualize:show_widget` claude.ai-runtime dependency) + absolute-spatial-declaration translation rule + cross-link forward to `higgsfield-seedance` § Output Format for Static Description slot integration.
+
++97 lines in PR #22 (+37 soul, +60 pipeline).
+
+### GPT Image 2 — flagship integration
+
+Adds GPT Image 2 to two surfaces — `image-models.md` catalog entry and `skills/higgsfield-models/MODELS-DEEP-REFERENCE.md` deep-reference entry. Closes the documentation gap identified at v3.7.5 audit (GPT Image 2 was previously only mentioned in passing at `higgsfield-cinema/SKILL.md:1804` as a Featured model with no dedicated entry; existing line 1804 mention now resolves to real destination).
+
+14 strict-verbatim factual items shipped per Phase 2d spec: model ID `gpt-image-2`, snapshot `gpt-image-2-2026-04-21`, released April 21, 2026, knowledge cutoff December 2025, pricing $8 / $2 / $30 per 1M tokens (input / cached / output), rate limits Tier 1 5 IPM → Tier 5 250 IPM, 4 endpoints (`v1/images/generations`, `v1/images/edits`, `v1/responses`, `v1/chat/completions`), 4 not-supported features (streaming, function calling, structured outputs, fine-tuning), Higgsfield URL `higgsfield.ai/ai/image?model=imagegen_2_0`, internal slug `imagegen_2_0`, native 4K resolution (up from 1536×1024), up to 16 reference images, multilingual text rendering >95% accuracy, scripts list (Japanese / Korean / Chinese / Hindi / Bengali). Comparative prose (vs GPT Image 1.5 / Nano Banana Pro / Seedream 4.5) paraphrased per IP-safe re-document discipline.
+
++55 lines in PR #23 (+15 catalog, +40 deep-reference).
+
+### DISCIPLINE.md — cross-cutting discipline patterns
+
+New `DISCIPLINE.md` at repo root indexing 9 cross-cutting discipline patterns in 3-3-3 tier symmetry. Plus 1-line `validate.py` registration update so the new file is enforced by the validator going forward.
+
+3-3-3 tier breakdown:
+
+- **Tier 1 — Workflow Discipline:** Pre-Prompt Confirmation Gate (with P10 "one question over many" folded inline) / Explicit-Stop Between Phases / Inventory-Extraction Checklist Before Composing
+- **Tier 2 — Output Discipline:** Visual-Marker-Only Output Discipline / Triple-Redundant Runtime / Single-Variable Iteration
+- **Tier 3 — Architectural Discipline:** 3-Stage Chain / 4-Phase Loop Architectural Pattern / Closing-Block-Baked-Into-Every-Prompt / Strict-Order Workflow with Refusal-to-Skip Phases
+
+Each pattern lists a concrete demonstration in the existing higgsfield codebase with file-and-section pointer (R6 mitigation: no aspirational content; all 9 cross-references verified resolving to real content at Gate 1 of sub-phase 2e). Two patterns use honest "weaker" framing rather than aspirational literal-source language: **P2 (Explicit-Stop Between Phases)** cites `higgsfield-pipeline` § Pipelines A-E artifact-handoff structure + Pipeline Pitfall 1 ("Never animate a 'good enough' image" — explicit don't-skip-ahead rule); **P8 (Closing-Block-Baked-Into-Every-Prompt)** cites root SKILL.md § MANDATORY WORKFLOW step 4 + `skills/shared/negative-constraints.md` as the single-source closing block applied across every higgsfield prompt. Both verified accurate by Peter at PR #24 review.
+
+Tightening pass applied per review directive: 194 lines → 126 lines (-68, -35%). Cuts: folded "How to apply" H2 into "What this is" intro; compressed pattern descriptions from 2-3 sentence multi-line to 1-sentence single-line; tightened "Demonstrated in" cross-refs; compressed Source attribution. Preserved: 9 patterns, 3-3-3 tier symmetry, all 9 cross-references, P2/P8 honest framing, v3.7.5 audit attribution.
+
++126 lines new file + 4-line `validate.py` registration update in PR #24.
+
+### Changed
+
+- **Frontmatter version bumps (8 files + root + new file)** — root `SKILL.md` 3.7.5 → 3.7.6 / updated 2026-05-16 → 2026-05-17; `skills/higgsfield-pipeline/SKILL.md` 3.2.0 → 3.3.0 (minor bump for new H2 § Building Complete AI Projects + new H2 § Spatial Blocking); `skills/higgsfield-soul/SKILL.md` 3.2.0 → 3.3.0 (minor bump for new H3 § Single-prompt 6-panel character sheet); `skills/higgsfield-audio/SKILL.md` 3.0.0 → 3.1.0 (minor bump for G4 diegetic-audio addendum); `skills/higgsfield-seedance/SKILL.md` 1.4.0 → 1.5.0 (minor bump for G6 + G12 H3s); `skills/higgsfield-prompt/SKILL.md` 3.2.0 → 3.3.0 (minor bump for G7 mistake row + G10 H2 + G9 cross-link callout); `skills/higgsfield-camera/SKILL.md` 3.1.0 → 3.2.0 (minor bump for G9 H2); `skills/higgsfield-models/SKILL.md` 3.0.2 → 3.1.0 (minor bump for G2 MODELS-DEEP-REFERENCE entry). All `updated:` dates → 2026-05-17. New `DISCIPLINE.md` ships at initial 1.0.0 (not a bump; new-file value). `image-models.md` has no frontmatter, no bump applicable. **Largest frontmatter cascade in repo history (v3.7.5 was 2 sub-skills + root; v3.7.6 is 7 sub-skills + root + new file).** R1 cascade mitigation per Phase 1c: bumps applied one-Edit-at-a-time with `python3 validate.py` after each, no bulk Write per v3.7.5 catch #11 (markdown-fence-nesting failure) lesson.
+
+- **`validate_user_guide.py` DEFAULT_BASELINE re-pointed** — `USER-GUIDE.pdf.baseline-v3.7.5` → `USER-GUIDE.pdf.baseline-v3.7.6` per v3.7.5 line 27 baseline-management discipline. New v3.7.6 baseline committed to git alongside this release (baselines accumulate, not rotate; v3.7.0 through v3.7.6 baselines all retained for historical comparison).
+
+- **`USER-GUIDE.pdf` regenerated** — content-equivalent to v3.7.5 baseline (Layer 1 text-extract diff PASS with version/date pattern normalization) but byte-divergent at 32055 byte positions (~95% of file) — deflate compression cascades the parameterized input deltas (version string v3.7.5 → v3.7.6, updated date 2026-05-16 → 2026-05-17, /CreationDate metadata) through the entire compressed object stream. **None of the v3.7.6 net-new surfaces (C-arc methodology, G2 GPT Image 2, audit-gap closeouts, DISCIPLINE.md) propagate into USER-GUIDE.pdf** because `generate_user_guide.py` content sections are hardcoded — see Drift catalog status below. USER-GUIDE.pdf modernization remains the deferred dedicated arc per v3.7.5 v3.7.6+ candidates list.
+
+- **`validate.py` updated** — `DISCIPLINE.md` added to `expected_root_files` list (line 134-140). Single-line registration ensures the new root-level doc is enforced by the validator going forward. Structural-integrity addition; Phase 1c spec did not list `validate.py` update but DISCIPLINE.md without validator registration would be inconsistent with the rest of root-doc enforcement pattern. Same class as catch #14 (structure wins over Phase 1c spec).
+
+### Sourcing
+
+- **C-arc source (Phase 1a triage)** — Higgsfield Discord, May 2026 — *Building Complete AI Projects: From Script to System* 14-page Canva slide deck + *How To Work With Scripts and GPTs to Build a Complete Project* (`How To 2.pdf`) 11-page Apple Pages prose companion. Both files in LEARNING HUB consolidated audit corpus. Cleaner-phrasing-wins precedent applied per v3.7.4 §5 / v3.7.5 §3 where the two sources diverge: prose canonical for body text (richer fields including "Hair" as separate Project Bible item + "Motion block" split from Negative/Continuity in Prompt Modules + "Deliver the action" as 6th scene purpose + "does not have to be a Hollywood screenplay" disclaimer + 80% rule + GPT-in-stages framing); deck canonical for visual / structural taxonomies (5-tile GPT roles + 4 production-instruction labels + 5 scene-purpose cards). 10-step numbering, step titles, and structural conclusions identical between sources — differences are expansion-density only.
+
+- **C-arc methodology lineage** — no external citations in source (unlike v3.7.5 screenwriter-skill audit which cited McKee / Campbell / Aristotle). Higgsfield first-party reference is explicit at Simple Workflow step 7 ("Generate inside Higgsfield") and closing line ("Higgsfield brings the visuals to life"). Classification: Higgsfield-affiliated official-or-semi-official educational content. IP discipline: factual prescriptions (9-item Project basics, 9-item Master Script contents, 5 GPT tile names, 11-item Project Bible + 3 rules of thumb, 6 scene purposes + 6-question scene-prompt checklist, 7 prompt module names + worked camera-block example, 8 named passes, 10 Simple Workflow steps, 4 production-instruction categories, disambiguation blockquote language) shipped verbatim per audit's factual-prescription classification; all body prose paraphrased.
+
+- **v3.7.5 audit findings closeout (Phase 1b resolution):**
+  - **G2 GPT Image 2** — flagship integration, shipped this release (sub-phase 2d)
+  - **G3 Single-prompt 6-panel character sheet** — shipped in `higgsfield-soul` § Character Sheet Creation (sub-phase 2c-iii)
+  - **G4 Diegetic-only audio for Seedance** — shipped in `higgsfield-audio` § Seedance 2.0 (sub-phase 2c-i)
+  - **G5 Scene-type-to-camera-grammar table** — **DROPPED** from v3.7.6 with backlog note. `higgsfield-prompt` § Scene Archetype Router (lines 416-453) already provides partial coverage via Action / General / Dialogue archetype maps. Reconsider only if richer scene-type taxonomy is warranted; current Router likely sufficient.
+  - **G6 Runtime arithmetic discipline** — shipped in `higgsfield-seedance` § Output Format (sub-phase 2c-i)
+  - **G7 No-aspect-ratio-in-prompt-body rule** — shipped in `higgsfield-prompt` § Common Prompt Mistakes (sub-phase 2c-ii)
+  - **G8 Age-blind output rule** — **DROPPED** from v3.7.6 (already covered in `higgsfield-prompt` § Seedance 2.0 Engine Constraints → Age-blind character rule, lines 496-500). Phase 1b collision audit discovery — no work needed.
+  - **G9 Camera-Emotion Sync hard rule** — shipped in `higgsfield-camera` § Camera-Emotion Sync (sub-phase 2c-ii)
+  - **G10 Generic-Emotion Decomposition** — shipped in `higgsfield-prompt` § Generic-Emotion Decomposition (sub-phase 2c-ii)
+  - **G11 Top-down spatial-blocking schema** — shipped in `higgsfield-pipeline` § Spatial Blocking (sub-phase 2c-iii)
+  - **G12 15s-prompt density heuristic** — shipped in `higgsfield-seedance` § Output Format (sub-phase 2c-i)
+  - **G1 Soul Cinema two-step compositing** — **DEFERRED** to v3.7.7+ pending Peter's hands-on Higgsfield UI testing
+  - **G13 Multi-shot `【镜头N】` syntax** — **DEFERRED** to v3.7.7+ pending Seedance product-team confirmation of platform-native vs community convention
+
+- **DISCIPLINE.md source (v3.7.5 audit pattern findings)** — 9 cross-cutting discipline patterns named from v3.7.5 ecosystem audit (Joey banana-pro-director + cinema-worldbuilder; screenwriter-skill; shotlist-builder). IP discipline: pattern *form* (structural shape + discipline name) is the audit contribution, IP-safe per pattern-not-text classification; pattern *demonstration* is higgsfield's own existing practice — file / section pointers are observed, not aspirational (R6 mitigation, verified at Gate 1 of sub-phase 2e).
+
+### Deferred to future releases
+
+- **G1 Soul Cinema two-step compositing flow** — Joey banana-pro-director Mode 1B (outfit-on-neutral-model Step 1B.1 → composite-onto-character Step 1B.2). Requires Peter's hands-on Higgsfield UI testing to verify the two-step flow works as documented before higgsfield ships re-documented guidance. Re-eligible for v3.7.7+ once UI testing completes.
+- **G13 Multi-shot `【镜头N】` block syntax for Seedance prompts** — from shotlist-builder source. Requires Seedance product-team confirmation of whether `【镜头N】` is a Seedance-supported native convention or external community convention. If native: high-value documentation gap. If community: only worth a one-line reference, if anything. Re-eligible for v3.7.7+ once product-team confirmation arrives.
+
+### Notes
+
+- **Mega-release exception to harder-single-arc commitment.** v3.7.5 committed harder to single-arc discipline. v3.7.6 is the second exception after v3.7.5's own backlog closeout — co-headlined by explicit Peter decision at Phase 1 planning stage, not single-arc by accident. Rationale: closing the v3.7.5 audit-findings backlog + C-arc integration + DISCIPLINE.md cross-cutting work landed cleaner as a single co-headlined release than as a sequence of smaller releases. Future releases return to harder-single-arc discipline.
+
+- **Catch #14 — planning-doc drift (new catch class, 6 instances).** New catch class opened this release. Cumulative numbering continues from v3.7.5 inheritance-pattern taxonomy which closed at #13. **Root cause:** Phase 1c specifications are estimates and structural placeholders, not authoritative on item counts, H-levels, scope line counts, or implementation step ordering. Phase 2 verifies against current file structure, source extracts, and tooling realities. Six instances surfaced across sub-phases:
+  1. **Step 02 contents count** — Phase 1c said 8, source has 9 (Phase 2a discovery)
+  2. **Step 05 Project Bible count** — Phase 1c said 10, source has 11 (Phase 2a discovery; Hair preserved as separate item per prose-canonical-for-body precedent)
+  3. **Step 06 scene purposes count** — Phase 1c said 5, source has 6 (Phase 2b discovery; union-deduped across deck visual + bullet list + prose)
+  4. **G10 H-level** — Phase 1c said H3 before § Identity vs. Motion, structural integrity requires H2 (H3 between two H2s would be orphaned per Markdown structure; Phase 2c-ii discovery)
+  5. **DISCIPLINE.md scope** — Phase 1c estimated 50-80 lines, realized 194 then tightened to 126 (Phase 2e + tightening pass; trade-off accepted for demonstration-link specificity)
+  6. **Phase 2f USER-GUIDE.pdf regen step ordering** — Phase 1c said regen before frontmatter bumps, but `generate_user_guide.py` reads version from root `SKILL.md` frontmatter as single source of truth; root frontmatter must bump first so regenerated PDF embeds v3.7.6 (Phase 2f discovery)
+
+  **Mitigation discipline going forward:** when Phase 1c spec disagrees with source / structure / tooling reality, source / structure / tooling wins; document the disagreement as a catch class instance.
+
+- **Frontmatter bump cascade scale.** 7 sub-skill files + root SKILL.md + new DISCIPLINE.md = 9 file frontmatters touched in single 2f batch. Largest cascade in repo history. R1 mitigation applied: single-file Edits with `python3 validate.py` after each, no bulk Write per v3.7.5 catch #11 (markdown-fence-nesting failure) lesson.
+
+- **Drift catalog status update.** v3.7.6 net-new surfaces compound D-items 3-8 further per v3.7.5 line 75 precedent. New surfaces that don't propagate into USER-GUIDE.pdf because `generate_user_guide.py` content sections are hardcoded: C-arc 10-Step Methodology H2 (compounds D-item for pipeline overview), G2 GPT Image 2 catalog + deep-reference (compounds D-item for image-models section), G9 Camera-Emotion Sync H2 (compounds D-item for camera section), DISCIPLINE.md root doc (no current USER-GUIDE.pdf surface). D-item count unchanged at 6 (D3-D8); compound events increased substantially. USER-GUIDE.pdf modernization remains the deferred dedicated arc.
+
+- **Future maintenance follow-ups (small-PR targets, not 2f scope):**
+  - `MODELS-DEEP-REFERENCE.md` Quick Decision Table at line 1136 still routes "Photorealistic image with precise text/logo rendering" to GPT Image 1.5. With GPT Image 2 now documented as the premium-tier text-rendering option, this row would more accurately route to GPT Image 2. Single-row update; ship in future maintenance PR.
+  - Pre-existing markdownlint warnings (MD060/table-column-style + MD040/fenced-code-language) in `image-models.md` line 363 and `MODELS-DEEP-REFERENCE.md` lines 60-307 surfaced by IDE re-scan during sub-phase 2d but not in 2d edit zones — additive-only release discipline. Address in future cleanup PR if desired.
+  - DISCIPLINE.md scope review at 6 months: if patterns prove unused by new sub-skills, trim from 126 lines toward 100-line floor; if patterns drive new sub-skill design, keep or expand.
+
+- **Phase 2 sub-phase shipping cadence.** 8 sub-phases shipped as 7 separate PRs before this release-ceremony PR (#18 / #19 / #20 / #21 / #22 / #23 / #24). Per-sub-phase merge cadence kept PR review surface manageable. Phase 1c estimated 8-13 sessions; actual landed near the lower bound. R1 / R6 / R8 risk mitigations all held; no Gate 4 self-audits surfaced regressions; one catch class (#14, six instances) opened across sub-phases.
+
+Commit prefix: `feat: v3.7.6 — mega release: C-arc (Building Complete AI Projects 10-Step) + G2 (GPT Image 2 flagship) + DISCIPLINE.md + audit-gap closeout`
+
 ## v3.7.5 — 2026-05-16
 
 ### Added
