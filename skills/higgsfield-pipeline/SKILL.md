@@ -220,6 +220,161 @@ Three rules of thumb make a Project Bible work in practice:
 > Bible is the upstream artifact; the Soul ID sheet and Cinema
 > Studio Elements are tool-side realizations of it.
 
+### Step 06 — Give Every Scene One Job
+
+Every scene should have one clear purpose. When you try to make
+one scene do too much, the AI starts blending details — messy
+motion, wrong angles, extra people, broken hands, missing
+objects, confusing results. Six scene purposes cover most
+project work:
+
+- Introduce the character
+- Show the location
+- Build tension
+- Reveal the product
+- Create emotion
+- Deliver the action
+
+A good scene prompt answers six questions:
+
+- Who is in the shot?
+- Where is the camera?
+- What is the subject doing?
+- What should the viewer notice first?
+- What must stay visible?
+- What should not happen?
+
+Clarity wins.
+
+> **Per-shot action-count rule.** Step 06 addresses the
+> *narrative purpose* of a scene (which may span multiple shots).
+> For the per-shot *action-count* rule — one primary action per
+> clip, with one or two secondary actions max — see
+> `../higgsfield-prompt/SKILL.md` § One Action Per Scene. Both
+> useful, at different units of decomposition.
+
+### Step 07 — Use Prompt Modules
+
+A prompt module is a reusable block of instruction. Instead of
+rewriting the same camera or lighting notes every time, build
+modules you can copy and paste. Seven module types cover most
+project work:
+
+- Character identity block
+- Camera block
+- Lighting block
+- Style block
+- Motion block
+- Negative prompt block
+- Continuity block
+
+Example camera block:
+
+> "Camera stays in front of the main subject, facing them
+> directly while tracking backward. The subject moves toward
+> camera. Background movement stays behind the subject. Do not
+> reverse the direction."
+
+That one block can save multiple generations. Build your own
+library of modules — it saves time and keeps your project
+stable.
+
+> **Prompt Modules as finer-grained sibling of Identity/Motion.**
+> The 7-module taxonomy is a finer-grained sibling of the
+> Identity-vs-Motion separation rule used in single-shot prompts.
+> For Soul ID single-shot work, the 2-block separation in
+> `../higgsfield-soul/SKILL.md` § Identity vs. Motion Separation
+> (also `../higgsfield-prompt/SKILL.md` § Identity vs. Motion
+> Separation Rule) is sufficient — "Character identity block"
+> here aliases their "Identity Block." The 7-module taxonomy adds
+> a layer for multi-shot projects where camera, lighting, and
+> style each warrant their own reusable block.
+
+### Step 08+09 — Fix Failures + Protect What Worked
+
+When a generation fails, do not just say "make it better" —
+that's not actionable. Tell GPT exactly what went wrong: which
+specific element is off, what to keep, what to change. Every
+failure should become a new rule: each diagnosed mistake gets
+locked into the project's negative-rules list so it doesn't
+recur.
+
+When fixing, protect what already worked. If 80% of the
+generation was right, keep that 80%. Only fix the broken part.
+A lot of people destroy good prompts by changing too much — keep
+the subject, keep the style, keep the camera if it worked, keep
+the lighting if it worked. Fix only the mistake.
+
+> **Full iteration discipline lives elsewhere.** The full
+> Change-One-Variable-at-a-Time discipline and the 6-Pass
+> Diagnostic Sequence (Subject / Action / Camera / Style / Audio
+> / Output) for when you don't yet know what's wrong are
+> documented in `../higgsfield-prompt/SKILL.md` § The Iteration
+> Rule — Change One Variable at a Time. Step 08+09 here names the
+> three rhetorical handles ("make it better" anti-pattern, 80%
+> rule, "every failure should become a new rule" framing); the
+> mechanics live there.
+
+### Step 10 — Build the Project in Passes
+
+Do not try to do everything at once. Build the project in clear
+passes:
+
+- Pass 1: Concept
+- Pass 2: Project script
+- Pass 3: Scene breakdown
+- Pass 4: Shot list
+- Pass 5: Image prompts
+- Pass 6: Video prompts
+- Pass 7: Review results
+- Pass 8: Fix and finalize
+
+Each pass produces an artifact the next pass consumes. Pass 1
+gives Pass 2 a concept to script; Pass 2 gives Pass 3 a script
+to break into scenes; and so on. AI moves fast, but fast without
+structure creates chaos — a workflow keeps it clean.
+
+> **Tool-level instantiation.** Passes 5-7 (image prompts / video
+> prompts / generate) are where the Higgsfield tool chain enters
+> the workflow — see § The Master Production Chain below for the
+> 8-stage tool-level chain (Popcorn → Seedream/Soul → Animate →
+> Recast → Lipsync → Vibe Motion → Upscale → Assemble), and §
+> Pipeline Decision Guide below for the chain choice by project
+> type (Cinematic Short Film, Social Series, Product Campaign,
+> Fast Iteration, Multi-Style Short Film).
+
+### Simple Workflow — Execution Recipe
+
+The 10 Steps above are the methodology. The Simple Workflow
+below is the imperative-action recipe — the same workflow
+expressed as steps you take in order:
+
+1. Write the project idea.
+2. Ask GPT to turn it into a project brief.
+3. Ask GPT to break it into scenes.
+4. Ask GPT to write a clean script.
+5. Ask GPT to turn each scene into image prompts.
+6. Ask GPT to turn each scene into video prompts.
+7. Generate inside Higgsfield.
+8. Review what worked and what failed.
+9. Give GPT specific correction notes.
+10. Regenerate only what needs fixing.
+
+That is how you move from idea to finished project. At step 7
+("Generate inside Higgsfield"), you choose which tool-chain to
+run — see § Pipeline Decision Guide below for the chain choice
+by project type.
+
+### Build With Purpose
+
+The power is not in one perfect prompt. The power is in the
+workflow.
+
+Scripts give the project direction. GPTs help organize and
+refine the work. Higgsfield brings the visuals to life. When you
+use all three together, you stop hoping for random good results.
+You start building with purpose.
+
 ---
 
 ## The Master Production Chain
