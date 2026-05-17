@@ -132,9 +132,10 @@ def main():
     # ── 3. Key root files present ───────────────────────────────────────────
     print("\n[ ROOT FILES ]")
     expected_root_files = [
-        "SKILL.md", "README.md", "CHANGELOG.md", "model-guide.md",
-        "image-models.md", "vocab.md", "prompt-examples.md",
-        "photodump-presets.md", "higgsfield_memory.py",
+        "SKILL.md", "README.md", "CHANGELOG.md", "DISCIPLINE.md",
+        "model-guide.md", "image-models.md", "vocab.md",
+        "prompt-examples.md", "photodump-presets.md",
+        "higgsfield_memory.py",
         "db/filter-memory.json", "db/quality-memory.json",
     ]
     for name in expected_root_files:
