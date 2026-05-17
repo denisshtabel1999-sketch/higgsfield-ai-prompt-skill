@@ -894,6 +894,52 @@ shot-by-shot if multi-cut. This is the main block.]
 For the full bilingual EN+ZH director output format (used in Seedance's
 web UI), see the extended reference at `../../docs/Seedance 2 Skill.md`.
 
+### Runtime arithmetic for multi-shot prompts
+
+Runtime appears in three places in a delivered Seedance prompt —
+the title line, the meta header (`**Duration:** Xs`), and any
+per-shot timing labels in the Dynamic Description. All three must
+agree.
+
+For multi-shot prompts, label each shot inline with its time range
+(e.g. `Shot 1 (0-3s): ... hard cut to Shot 2 (3-8s): ... hard cut
+to Shot 3 (8-15s): ...`). The per-shot labels must *sum* to the
+total duration stated in the title and meta header; a drift between
+the two surfaces is the most common source of "my multi-shot prompt
+rendered as a single shot" failures.
+
+Always ask the user for runtime — never default. A 5s, 10s, or 15s
+assumption silently degrades adherence on prompts that needed a
+different cap.
+
+### Shot density for multi-scene prompts
+
+When grouping multiple shot rows into a single Seedance prompt
+(rather than splitting into separate prompts), use this starting
+heuristic: roughly one prompt per 4-5 shot rows. The heuristic is
+project-derived empirical observation, not platform-enforced, and
+varies wildly by scene type.
+
+Group shot rows into one prompt when ALL of these hold:
+
+- Same character set in frame
+- Same location or contiguous subset of a location
+- Continuous emotional / temporal unit (no time skip, no major mood
+  pivot)
+- Combined runtime fits within the 15s Seedance cap
+- The grouped prompt text stays within practical generation limits
+  (~2500 characters)
+
+Split into separate prompts when any of these fire: hard cut
+between locations (e.g. apartment → flashback), major character
+entrance or exit changes the handle list, or the combined runtime
+exceeds 15s.
+
+The heuristic is a starting state, not a target. Adjust per project
+as you learn how Seedance handles your particular scene-type
+density — dense action sequences may want 1 prompt per 2-3 shot
+rows; quiet emotional scenes may collapse to 1 prompt per 8+ rows.
+
 ---
 
 ## Post-Clip Decisions
