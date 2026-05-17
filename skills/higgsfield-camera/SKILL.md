@@ -174,6 +174,51 @@ Layering two compatible movements creates richer shots:
 
 ---
 
+## Camera-Emotion Sync — Movement per Focal Character Emotion
+
+The camera is the emotional double of the focal character.
+Movement, lens choice, and shot duration should be picked by the
+character's emotional state — not by what looks "cinematic" in the
+abstract. The mismatch is one of the most visible tells of an
+AI-video prompt that hasn't done the emotional-syncing work: a
+calm scene with a jittery handheld camera reads as wrong even when
+nothing else is broken; an angry scene with a smooth dolly reads
+as detached even when the action is right.
+
+Six emotional registers cover most scenes:
+
+| Focal character emotion | Camera prescription |
+|---|---|
+| Anger / rage / tension / on edge | Handheld breathing, jittery and unstable — broken breath rhythm, visible micro-twitches in both axes, small amplitude, irregular rhythm. Avoid stabilizers. |
+| Calm / control / confidence | Handheld breathing, smooth — steady breath rate, regular micro-amplitude. Stabilizer-light, but still alive. |
+| Sadness / vulnerability | Handheld, slow, low — lower breath frequency, slight downward camera drift, weight feels heavier on the operator. |
+| Shock / revelation | Static + very slow push-in or pull-out — sharp freeze at the moment of revelation, then minimal movement for the next 0.5-2s. |
+| Action | 60fps, 180° shutter — clean motion with shutter-bound motion blur; avoid pulled motion blur from longer shutters. |
+| Final beat / verdict | Top-shot freeze, 0.3-0.5s — directly from above, time stops, all positions locked. |
+
+### Emotional arcs within a single shot
+
+When the focal character's emotion *changes* across a continuous
+take (e.g. rage → controlled in a single shot), the camera should
+change synchronously. Write it as named phases in the prompt:
+
+- Opening phase: prescribe the camera for the entry emotion
+- Transition phase: describe how the camera character shifts
+  (handheld amplitude reduces, drift settles, push-in slows)
+- Closing phase: prescribe the camera for the exit emotion
+
+The camera moves with the actor, not on its own clock.
+
+> **Decompose the emotion before picking the camera.** The 6
+> emotional registers above are tracked by *named* emotions (anger,
+> calm, sadness, shock). If the user supplies a generic emotion
+> ("surprised", "tense") the first step is decomposing it into a
+> specific named register — see `../higgsfield-prompt/SKILL.md` §
+> Generic-Emotion Decomposition for the "which kind of X?"
+> clarification template.
+
+---
+
 ## Cinema Studio 3.0 Camera Best Practices (Business/Team Plan)
 
 > These best practices apply to Cinema Studio 3.0's generation engine, available exclusively on **Business and Team plans**.
