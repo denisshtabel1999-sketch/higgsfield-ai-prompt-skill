@@ -1066,6 +1066,46 @@ Best use cases:
 
 ---
 
+### GPT Image 2
+**Best for:** Photorealistic commercial imagery · text-heavy and multilingual designs · character consistency across multi-shot campaigns · native 4K output
+**Strengths:** First OpenAI image model with O-series reasoning — complex multi-element compositions resolve in one pass. Native 4K resolution (up from 1536×1024 in GPT Image 1.5). Up to 16 reference images. Multilingual text rendering >95% accuracy across CJK + Hindi + Bengali scripts. Photorealism leap over prior GPT Image generations. Roughly 2× speed on standard mode vs GPT Image 1.5.
+
+**Use when:**
+- Text-heavy designs (logos, labels, signage, captions baked into the frame)
+- Multilingual campaigns where non-Latin scripts must render legibly
+- Commercial product imagery with strict brand-fidelity requirements
+- Multi-shot character consistency across 2-16 reference images
+- Complex multi-element compositions previously requiring Nano Banana Pro Thinking mode
+
+**Use when not to use:**
+- High-volume batch generation on OpenAI API Tier 1-2 (5 IPM rate limit on Tier 1; scales to 250 IPM at Tier 5)
+- Latency-sensitive workflows (O-series reasoning adds variable response time)
+- Simple single-subject prompts (GPT Image 1.5 is faster and cheaper for these)
+
+**OpenAI API specs:**
+- Model ID: `gpt-image-2` (snapshot `gpt-image-2-2026-04-21`)
+- Released: April 21, 2026
+- Knowledge cutoff: December 2025
+- Endpoints: `v1/images/generations`, `v1/images/edits`, `v1/responses`, `v1/chat/completions`
+- Pricing: $8 / $2 / $30 per 1M tokens (input / cached / output)
+- Rate limits: Tier 1 5 IPM → Tier 5 250 IPM
+- Not supported: streaming, function calling, structured outputs, fine-tuning
+
+**Higgsfield integration:**
+- UI surface: `higgsfield.ai/ai/image?model=imagegen_2_0`
+- Internal slug: `imagegen_2_0`
+- Featured-model status: surfaced via Cinema Studio image-mode picker (see `../higgsfield-cinema/SKILL.md` line 1804 area for the Featured-models routing — selecting GPT Image 2 inside Cinema Studio means Style Settings + Camera Settings panels are not available; the shell remains but creative control reverts to prompt-only)
+
+**Compare to GPT Image 1.5:** Photorealism leap, text-rendering leap, native 4K (vs 1536×1024), ~2× speed on standard mode, plus O-series reasoning capability. Same OpenAI provenance — generational jump, not sidegrade.
+
+**Compare to Nano Banana Pro:** Nano Banana Pro emphasizes reasoning composition + ultra-fast 4K + Google-side multimodal grounding (up to 14 reference images). GPT Image 2 emphasizes photorealism + text rendering + commercial product imagery + multilingual non-Latin script support (up to 16 reference images). Different strength axes for different use cases — pick Nano for fast 4K with reasoning across diverse subject types; pick GPT Image 2 for premium photorealism with text rendering and commercial brand fidelity.
+
+**Compare to Seedream 4.5:** Seedream covers general-purpose versatility across diverse styles. GPT Image 2 narrows scope to premium photorealism and commercial-grade output — pick GPT Image 2 when brand-fidelity or text-rendering matters; pick Seedream when style variety matters more than premium photorealism.
+
+**Prompt note:** GPT Image 2 responds best to specific, detail-rich prompts that name materials, lighting, and brand context. The O-series reasoning surfaces when the prompt has multiple interacting constraints — let it think rather than over-constraining. For text rendering: type the exact text in quotes inside the prompt; do not describe it ("a sign that says...") because the description form drifts.
+
+---
+
 ## Quick Decision Table
 
 | User need | Model |

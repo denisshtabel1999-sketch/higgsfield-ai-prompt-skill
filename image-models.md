@@ -278,6 +278,21 @@ Tip: Name each reference's role — "Use Image A for pose, Image B for style, Im
 
 ---
 
+### GPT Image 2
+**Credits:** Confirm in Higgsfield UI — premium tier expected given native 4K + O-series reasoning
+**UI:** GPT Image 2 · 16:9 · 4K · 1/4 · Multi-reference (up to 16 images)
+**Best for:** Photorealistic commercial imagery · text-heavy designs · multilingual campaigns · character consistency across multi-shot · CJK / Hindi / Bengali text rendering
+**Higgsfield URL:** `higgsfield.ai/ai/image?model=imagegen_2_0`
+**Higgsfield internal slug:** `imagegen_2_0`
+**OpenAI model ID:** `gpt-image-2` (snapshot `gpt-image-2-2026-04-21`, released April 21, 2026, knowledge cutoff December 2025)
+**Native resolution:** 4K (up from 1536×1024 in GPT Image 1.5)
+**Reference images:** up to 16
+**Multilingual text rendering:** >95% accuracy across Japanese, Korean, Chinese, Hindi, Bengali — first OpenAI image model to handle non-Latin scripts at production-grade fidelity
+**vs GPT Image 1.5:** Photorealism leap, text-rendering leap, native 4K (up from 1536×1024), ~2× speed on standard mode, plus O-series reasoning capability for complex multi-element prompts that previously required Nano Banana Pro Thinking mode
+**Note:** First image model with O-series reasoning capabilities — complex multi-element compositions resolve more reliably than on prior GPT Image generations. For full API specs, rate limits, and deep-reference comparison to siblings, see `skills/higgsfield-models/MODELS-DEEP-REFERENCE.md` § GPT Image 2.
+
+---
+
 ## FLUX Family (⚠ External/Third-party)
 
 All FLUX models show a warning triangle (⚠) in the UI — third-party external models.
