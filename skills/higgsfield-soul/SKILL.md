@@ -222,6 +222,43 @@ Then use 3D Mode to orbit and capture additional angles from the same generation
 than a single photo. This translates directly into better consistency across extreme
 angle changes, action shots, and profile views.
 
+### Single-prompt 6-panel character sheet (3×2 grid)
+
+An alternative to the multi-step assembly above is generating
+the entire character sheet in **one prompt → one 16:9 image →
+3×2 grid with six labeled panels**. Same character described
+once; identity stays maximally locked across all six panels
+because the generation pass is single. Prefer this for Soul ID
+reference work when the image model supports a 16:9 grid layout
+(Nano Banana Pro and similar grid-capable models).
+
+The six panels in canonical order:
+
+- **Panel 1 — Front body:** straight-on neutral stance, full
+  styling visible head-to-toe
+- **Panel 2 — 3/4 turn:** body angled ~30° from camera, weight
+  on back hip
+- **Panel 3 — Back body:** straight back view, hair fall and
+  accessory details from behind
+- **Panel 4 — Waist-up portrait:** head, shoulders, upper torso
+- **Panel 5 — Hands detail close-up:** both hands forward, ring
+  stack, nail finish, any held prop
+- **Panel 6 — Face detail close-up:** tight crop from collarbone
+  up, earrings, lips, skin texture, eyes
+
+**Prompt pattern** — identity described once at the opening,
+followed by panel position labels with what's different per
+panel (stance, framing, focus). Close with: "Identical character
+identity locked across all six panels. Uniform studio backdrop
+and lighting across all six panels."
+
+**Why single-prompt over multi-step:** the multi-step assembly
+above (Grid Generation + 3D Mode + composite) produces a sheet
+from multiple independent generations — identity can drift
+panel-to-panel even with a strong reference. The single-prompt
+3×2 grid keeps identity locked because all six panels render
+together in one pass.
+
 ---
 
 ## Micro-Expressions — Nuanced Performance Direction

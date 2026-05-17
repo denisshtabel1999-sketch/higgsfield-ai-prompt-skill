@@ -856,6 +856,66 @@ better continuity.
 
 ---
 
+## Spatial Blocking — Top-Down Schema for Multi-Character Scenes
+
+When a scene has multiple characters or geometry that matters,
+AI video models hallucinate spatial relationships unless they're
+declared in absolute terms. The fix is a top-down schema —
+bird's-eye sketch of the scene that you draft, the user
+approves, and the prompt then describes in absolute terms
+("character A 2m from character B, character C 1.5m behind A,
+partially occluded by the corner pillar"). Skip this step and
+the model resolves blocking on its own — usually wrong, often
+worse cut-to-cut as the geometry drifts.
+
+**When to draw a schema:**
+
+- 2+ characters in the same scene
+- Key prop on a specific surface (device, artifact, weapon,
+  photo)
+- Complex camera geometry (which shot from where, arcs, eyeline
+  changes per cut)
+
+**What goes on the schema:**
+
+- Room outline (walls, tables, screens, doorways)
+- Character positions (one initial per character, placed at the
+  starting position)
+- Eyelines (arrow showing where each character is looking)
+- Props (icons or short labels at exact placement)
+- Distances (~Xm between key objects)
+- Surface labels (FL / FR / BL / BR for front-left / front-right
+  / back-left / back-right, relative to a stated main view)
+
+ASCII form for the schema — runtime-portable, copy-paste-able
+into chat or any document:
+
+```
+                      [WINDOW]
+                          |
+  [TABLE]    G(↓east)     |
+    ┌─┐                   |        R(↑north)
+    │ │       ~2m         |          @
+    └─┘                  ~1.5m
+                          |
+                       [DOOR]
+                          |
+                  (camera mount, west wall)
+```
+
+Translate the schema into the prompt as absolute spatial
+declarations — "Gandelfina stands behind the table, facing east
+at the window; Roko stands 2m from her, facing north toward the
+door" beats "Gandelfina near the table, Roko nearby" by a wide
+margin for AI-video adherence.
+
+> **Workflow handoff to Seedance.** Once the schema is approved,
+> the prompt declares character positions in absolute terms
+> inside the Static Description slot of the Seedance prompt.
+> See `../higgsfield-seedance/SKILL.md` § Output Format.
+
+---
+
 ## Pipeline Decision Guide
 
 | You want to make | Use this pipeline |
