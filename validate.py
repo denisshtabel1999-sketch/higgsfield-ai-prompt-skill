@@ -9,6 +9,7 @@ Checks:
   - Relative path references inside SKILL.md files resolve to real files
   - JSON databases are valid and schema-complete
   - Entry counts match _total_entries declarations
+  - Root SKILL.md version/updated agree with the README badge + footer
 
 Usage:
   python validate.py
@@ -110,6 +111,52 @@ def check_json_db(label: str, path: Path, required_fields: set):
                 check(False, f"{label} entry {eid}: missing field '{field}'")
 
 
+def check_version_consistency():
+    """Cross-check the single-source version/date in root SKILL.md against the
+    README badge and footer. Catches drift like a stale frontmatter `updated:`
+    that the per-file frontmatter check can't see (it validates one file at a
+    time)."""
+    skill = ROOT / "SKILL.md"
+    readme = ROOT / "README.md"
+    if not check(skill.exists(), "SKILL.md exists") or not check(readme.exists(), "README.md exists"):
+        return
+
+    fm_match = re.match(r"^---\n(.*?)\n---", skill.read_text(encoding="utf-8"), re.DOTALL)
+    if not fm_match:
+        check(False, "SKILL.md frontmatter parses")
+        return
+    fm = fm_match.group(1)
+    readme_text = readme.read_text(encoding="utf-8")
+
+    # SKILL.md version/updated live nested under `metadata:` — allow indentation.
+    skill_version = re.search(r"^\s*version:\s*([0-9]+\.[0-9]+\.[0-9]+)", fm, re.MULTILINE)
+    skill_updated = re.search(r"^\s*updated:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})", fm, re.MULTILINE)
+    # README badge: .../badge/version-3.8.1-blue
+    badge_version = re.search(r"badge/version-([0-9]+\.[0-9]+\.[0-9]+)-", readme_text)
+    # README footer: ... v3.8.1 (updated 2026-06-03) ...
+    footer = re.search(r"v([0-9]+\.[0-9]+\.[0-9]+)\s*\(updated\s*([0-9]{4}-[0-9]{2}-[0-9]{2})\)", readme_text)
+
+    if not check(bool(skill_version), "SKILL.md frontmatter has a version"):
+        return
+    if not check(bool(skill_updated), "SKILL.md frontmatter has an updated date"):
+        return
+    if not check(bool(badge_version), "README has a version badge"):
+        return
+    if not check(bool(footer), "README footer has 'vX.Y.Z (updated YYYY-MM-DD)'"):
+        return
+
+    sv, su = skill_version.group(1), skill_updated.group(1)
+    bv = badge_version.group(1)
+    fv, fu = footer.group(1), footer.group(2)
+
+    check(sv == bv, "SKILL.md version matches README badge",
+          "" if sv == bv else f"SKILL.md={sv}, badge={bv}")
+    check(sv == fv, "SKILL.md version matches README footer",
+          "" if sv == fv else f"SKILL.md={sv}, footer={fv}")
+    check(su == fu, "SKILL.md updated date matches README footer",
+          "" if su == fu else f"SKILL.md={su}, footer={fu}")
+
+
 def main():
     print(f"\nHiggsfield Skill Repo — Validation Report")
     print(f"Root: {ROOT}\n")
@@ -143,7 +190,11 @@ def main():
         path = ROOT / name
         check(path.exists(), name)
 
-    # ── 4. PDF dry-run smoke check ──────────────────────────────────────────
+    # ── 4. Version / date consistency ───────────────────────────────────────
+    print("\n[ VERSION / DATE CONSISTENCY ]")
+    check_version_consistency()
+
+    # ── 5. PDF dry-run smoke check ──────────────────────────────────────────
     print("\n[ PDF DRY-RUN SMOKE ]")
     import subprocess
     try:
