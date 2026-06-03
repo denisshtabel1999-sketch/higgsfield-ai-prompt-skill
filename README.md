@@ -1,4 +1,4 @@
-[![Version](https://img.shields.io/badge/version-3.8.1-blue)](https://github.com/OSideMedia/higgsfield-ai-prompt-skill)
+[![Version](https://img.shields.io/badge/version-3.8.2-blue)](https://github.com/OSideMedia/higgsfield-ai-prompt-skill)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Claude%20Cowork%20%7C%20Claude%20Code-purple)](https://github.com/OSideMedia/higgsfield-ai-prompt-skill)
 
@@ -20,6 +20,9 @@ Transforms natural language requests into production-ready Higgsfield prompts us
 - **Cinema Studio 3.0** (Business/Team plan): native dual-channel stereo audio, Smart shot control, 15s max duration, 7 genres, @ reference patterns, Soul Cast 3.0
 - **Cinema Studio 3.5**: three-pill main UI (Genre / Style / Camera), Style Settings panel (8 Color Palette / 6 Lighting / 9 Camera Moveset Style + Manual Style mode), Camera Settings four-axis panel (3 Camera Body / 5 Lens / 5 Focal Length including new 75mm / 3 Aperture), Image Mode with four Cinematic models picker (Soul Cinema default, Cinematic Characters, Cinematic Locations, Cinematic Cameras with 2.5 vocabulary)
 - **Seedance 2.0 prompting best practices** — Intent over Precision, Genre Router, I2V Gate, Anti-Slop, Physics Language, SCELA audio, Reference-Based / Continuation / Expand Shot / Edit Shot / Transformation prompt modes, Continuation Prompt Formula, the Iteration Rule
+- **GPT Image 2.0 prompt director** — three-format taxonomy (structured JSON for UI mockups / infographics / reference sheets, dense cinematic prose for single-subject scenes, auto-derive meta-prompt for theme-only concepts) plus reference-sheet and static-ad-recreation workflow satellites
+- **Higgsfield Canvas** — node-based / infinite-board workspace guidance: chaining prompts → images → videos, named canvas patterns, Shared Canvas live collaboration, build-free / generate-paid cost model
+- **Marketing Studio + Content Factory** — 9 DTC ad presets (UGC / Tutorial / Unboxing / Hyper Motion / TV Spot / Wild Card / Virtual Try-On) with 4–15s ad video, plus an end-to-end campaign pipeline (research → plan → generate → publish → report) with a cost-savings report
 - **Shared negative constraints reference** — categorized artifacts + prevention phrases (positive alternatives for 3.0); Kling 3.0 Motion Control failure diagnostic; Physics Rendering — Resolution Decision Matrix (cross-model 480p / 720p / 1080p routing rule for Seedance 2.0 + Cinema Studio 3.x)
 - **Identity vs. Motion separation** — hard rule for character consistency across shots
 - **Annotated templates library** — 10 genre templates with Cinema Studio 3.0 genre mappings, plus Seedance multi-character coordination + text-overlay sub-libraries (17 files across 3 categories)
@@ -177,10 +180,10 @@ For the full coexistence rules, detection signals, naming-collision callouts, an
 │   └── quality-memory.json           ← Quality failure memory (seeded)
 ├── docs/                             ← Extended reference documents
 │   ├── Seedance 2 Skill.md           ← Bilingual EN+ZH Seedance director reference
-│   ├── archive/                      ← Historical artifacts
-│   │   └── v3.0.0/                   ← v3.0.0 audit + inventory snapshot
-│   ├── pdf-audit/                    ← PDF integration audit reports (v3.4.0, v3.6.0)
-│   └── user-guide/                   ← Exported USER-GUIDE.pdf + version baselines
+│   ├── archive/                      ← Historical records
+│   │   ├── HISTORY.md                ← Consolidated v3.0.0–v3.6.0 audit + inventory snapshots
+│   │   └── AUDIT-2026-06-03.md       ← Full repo audit (security, bugs, docs hygiene)
+│   └── user-guide/                   ← Exported USER-GUIDE.pdf + current-version baseline (rotate, not accumulate)
 ├── templates/                        ← Genre templates + Seedance coordination + text-overlays
 │   ├── 01-cinematic-action-chase.md
 │   ├── 02-product-ugc-showcase.md
@@ -206,6 +209,10 @@ For the full coexistence rules, detection signals, naming-collision callouts, an
     │   └── negative-constraints.md       ← Shared artifact prevention reference
     ├── higgsfield-prompt/SKILL.md        ← Core MCSLA formula + prompt structure + Identity/Motion separation
     ├── higgsfield-image-shots/SKILL.md   ← Cinematic image prompting (shots, angles, composition)
+    ├── higgsfield-gpt-image-2/
+    │   ├── SKILL.md                      ← GPT Image 2.0 director (JSON / prose / meta-prompt taxonomy)
+    │   ├── reference-sheet-workflow.md   ← Automatic product reference-sheet workflow
+    │   └── static-ads-workflow.md        ← Static-ad recreation workflow
     ├── higgsfield-models/
     │   ├── SKILL.md                      ← Compact model selection guide
     │   └── MODELS-DEEP-REFERENCE.md      ← Full per-model documentation (on-demand)
@@ -221,6 +228,13 @@ For the full coexistence rules, detection signals, naming-collision callouts, an
     ├── higgsfield-mixed-media/SKILL.md   ← Mixed media + hybrid generation
     ├── higgsfield-moodboard/SKILL.md     ← Moodboard creation workflows
     ├── higgsfield-pipeline/SKILL.md      ← Multi-step generation pipelines
+    ├── higgsfield-canvas/SKILL.md        ← Node-based Canvas workspace + named patterns + Shared Canvas
+    ├── higgsfield-content-factory/
+    │   ├── SKILL.md                      ← Campaign pipeline (research → plan → generate → publish → report)
+    │   └── publish-and-report-workflow.md ← Publish + cost-savings report satellite
+    ├── higgsfield-marketing-studio/
+    │   ├── SKILL.md                      ← Marketing Studio: 9 ad presets + 4–15s ad video
+    │   └── cross-surface-workflow.md     ← ms_image / DTC Ads cross-surface workflow
     ├── higgsfield-recall/SKILL.md        ← Recall + regeneration patterns
     ├── higgsfield-cinema/SKILL.md        ← Cinema Studio 2.5 + 3.0 + 3.5 (Soul Cast, Color Grading, 3D Mode, Smart Mode, @ References, Native Audio, three-pill UI, Image Mode, Cinematic models picker)
     ├── higgsfield-seedance/
@@ -259,4 +273,4 @@ For the full coexistence rules, detection signals, naming-collision callouts, an
 
 ---
 
-Built February 2026 · v3.8.1 (updated 2026-06-03) · Platform: [higgsfield.ai](https://higgsfield.ai)
+Built February 2026 · v3.8.2 (updated 2026-06-03) · Platform: [higgsfield.ai](https://higgsfield.ai)

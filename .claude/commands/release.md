@@ -8,6 +8,7 @@ If no version argument is provided, check CHANGELOG.md for the latest version an
 
 Steps:
 
+0. **Sanitize the version argument** — before using `$ARGUMENTS` in any shell command, confirm it is a bare semantic version matching `^[0-9]+\.[0-9]+\.[0-9]+$` (e.g. `2.1.0`). If it contains anything else (spaces, `;`, backticks, quotes, path separators), STOP and ask the user for a clean version string — never interpolate an unvalidated argument into the `git commit` / `git tag` / `gh release create` shell snippets below.
 1. **Validate** — run `python3 validate.py`. Stop if any check fails.
 2. **Changelog check** — confirm CHANGELOG.md has an entry for this version. If not, ask what to add.
 3. **Commit** — stage and commit any pending changes with message: `feat: v$ARGUMENTS — <summary from changelog>`

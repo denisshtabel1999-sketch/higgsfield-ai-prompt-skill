@@ -12,7 +12,7 @@ description: >
 user-invocable: true
 metadata:
   tags: [higgsfield, video, image, prompt, cinematic, AI, filmmaking, motion, camera]
-  version: 3.8.1
+  version: 3.8.2
   updated: 2026-06-03
   author: O-Side Media
   license: MIT
@@ -56,7 +56,7 @@ Higgsfield is a cinematic AI video and image generation platform built for filmm
 creators. Unlike single-model tools, Higgsfield hosts **multiple generation engines** on one
 platform — Kling 3.0/3.0 Omni/3.0 Motion Control, Sora 2, Google Veo 3.1/3.1 Lite, Wan 2.7/2.6/2.5,
 Seedance 2.0/Pro, Minimax Hailuo 2.3/02, Higgsfield DoP (Lite/Standard/Turbo) for video; Soul 2.0, Soul Cinema Preview,
-Soul Cast, Nano Banana Pro/2, Kling Image 3.0/Omni, Seedream 4.0, GPT Image 1.5,
+Soul Cast, Nano Banana Pro/2, Kling Image 3.0/Omni, Seedream 4.0, GPT Image 2.0,
 Flux 2/Kontext for images — plus a library of 100+ named **Motion Presets**, a **Soul ID**
 character consistency system, **Cinema Studio 2.5**, **Cinema Studio 3.0** (Business/Team plan), and **Cinema Studio 3.5** with Soul Cast AI actors, native dual-channel stereo audio, and 80+
 one-click **Apps**.
@@ -113,6 +113,7 @@ budget constraints, client work), **confirm before generating:**
 | User unsure which workspace/tool fits, or asks "what should I use for X" | `higgsfield-workspaces` |
 | Write or improve a prompt | `higgsfield-prompt` + relevant sub-skills |
 | Cinematic still image prompt (shot framing, angles) | `higgsfield-image-shots` |
+| GPT Image 2.0 / gpt-image-2 prompt, UI mockup, infographic, character/reference sheet, layout-dense image, or static-ad recreation | `higgsfield-gpt-image-2` |
 | Choose the right model | `higgsfield-models` |
 | Camera movement guidance (video) | `higgsfield-camera` |
 | Named motion preset (Explosion, Werewolf, etc.) | `higgsfield-motion` |
@@ -125,6 +126,7 @@ budget constraints, client work), **confirm before generating:**
 | Moodboard, style direction, Soul Hex color | `higgsfield-moodboard` |
 | Visual consistency across a project | `higgsfield-moodboard` |
 | Mixed Media presets (Noir, Sketch, Particles, etc.) | `higgsfield-mixed-media` |
+| Photodump style preset / social-feed photo-dump aesthetic | `photodump-presets.md` (root reference) |
 | Artistic style transformation, preset stacking | `higgsfield-mixed-media` |
 | Higgsfield Assist (GPT-5 copilot) | `higgsfield-assist` |
 | Credit optimization, plan selection, budget strategy | `higgsfield-assist` |
@@ -271,6 +273,7 @@ Quick summary — five layers, every prompt:
 | `higgsfield-workspaces` | User is choosing a workspace / asking "what should I use for X" / hasn't picked a tool yet |
 | `higgsfield-prompt` | Any prompt writing or refinement request |
 | `higgsfield-image-shots` | Cinematic image prompts — shot framing, angles, composition |
+| `higgsfield-gpt-image-2` | GPT Image 2.0 prompts — three-format taxonomy (JSON / prose / meta-prompt), UI mockups, infographics, reference sheets, static-ad recreation |
 | `higgsfield-models` | "Which model should I use?" / model comparison |
 | `higgsfield-camera` | Camera movement questions (video) |
 | `higgsfield-motion` | Named preset requests (Explosion, Werewolf, VFX, etc.) |

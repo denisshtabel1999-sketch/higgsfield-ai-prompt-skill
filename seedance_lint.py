@@ -52,8 +52,15 @@ REAL_NAMES = [
     r"\belon musk\b", r"\bdonald trump\b", r"\bjoe biden\b", r"\bkamala harris\b",
     r"\bvladimir putin\b", r"\bxi jinping\b", r"\bbarack obama\b",
     r"\bkeanu reeves\b", r"\btom cruise\b", r"\bbrad pitt\b", r"\bleonardo dicaprio\b",
-    r"\btaylor swift\b", r"\bbeyonc[eé]\b", r"\brihanna\b", r"\bkanye\b", r"\bye\b(?! olde)",
-    r"\bkim kardashian\b", r"\bdrake\b(?!'s equation)", r"\btravis scott\b",
+    r"\btaylor swift\b", r"\bbeyonc[eé]\b", r"\brihanna\b", r"\bkanye\b",
+    # 'ye' (Kanye's stage name) was dropped — it collides with archaic English
+    # ('ye gods', 'hear ye') and 'kanye' above already covers the artist.
+    # 'drake' collides with the waterfowl / surname (Francis Drake); exclude the
+    # common innocent collocations so the rapper still trips the rule but a duck
+    # doesn't block an otherwise clean prompt.
+    r"\bkim kardashian\b",
+    r"(?<!francis )(?<!a )(?<!the )(?<!male )\bdrake\b(?!'s equation)(?! duck)",
+    r"\btravis scott\b",
     r"\bmessi\b", r"\bronaldo\b", r"\blebron\b", r"\bmichael jordan\b",
     r"\bmr beast\b", r"\bmrbeast\b",
 ]
@@ -450,7 +457,11 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.file:
-        prompt = open(args.file, encoding="utf-8").read()
+        try:
+            prompt = Path(args.file).read_text(encoding="utf-8")
+        except OSError as e:
+            print(f"ERROR: cannot read --file {args.file!r}: {e}", file=sys.stderr)
+            return 2
     elif args.prompt:
         prompt = args.prompt
     elif not sys.stdin.isatty():

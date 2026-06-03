@@ -25,28 +25,47 @@ from pathlib import Path
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR = Path(__file__).parent
-# DB files live alongside the script (sibling directory or same directory)
+# DB files live alongside the script (sibling directory or same directory).
+# The directory is created lazily on first write (see save_db / export_summary),
+# not at import time — importing this module should have no filesystem side effects.
 DB_DIR = SCRIPT_DIR / "db"
-DB_DIR.mkdir(parents=True, exist_ok=True)
 FILTER_DB = DB_DIR / "filter-memory.json"
 QUALITY_DB = DB_DIR / "quality-memory.json"
+
+# Allowed outcome values, mirroring the inline documentation on add_filter /
+# add_quality. update-* commands validate against these so a typo (e.g.
+# "fixedd") can't silently flip every derived boolean to False.
+FILTER_OUTCOMES = {"unknown", "fixed", "workaround", "still-blocked"}
+QUALITY_OUTCOMES = {"unknown", "improved", "still-failing"}
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 def load_db(path: Path) -> dict:
     try:
         with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+            db = json.load(f)
     except FileNotFoundError:
         print(json.dumps({"status": "error", "message": f"Database file not found: {path}"}))
         sys.exit(1)
     except json.JSONDecodeError as e:
         print(json.dumps({"status": "error", "message": f"Database file is corrupted: {e}"}))
         sys.exit(1)
+    # Guarantee the shape every caller assumes: a dict with a list "entries".
+    # A valid-JSON-but-wrong-shape file should fail the clean error contract,
+    # not crash later with a raw KeyError/AttributeError traceback.
+    if not isinstance(db, dict):
+        print(json.dumps({"status": "error", "message": f"Database root is not a JSON object: {path}"}))
+        sys.exit(1)
+    entries = db.setdefault("entries", [])
+    if not isinstance(entries, list):
+        print(json.dumps({"status": "error", "message": f"Database 'entries' must be a list: {path}"}))
+        sys.exit(1)
+    return db
 
 def save_db(path: Path, data: dict):
     data["_last_updated"] = datetime.now(timezone.utc).isoformat()
     data["_total_entries"] = len(data["entries"])
+    path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = path.with_suffix(".tmp")
     try:
         with open(tmp_path, "w", encoding="utf-8") as f:
@@ -60,7 +79,17 @@ def save_db(path: Path, data: dict):
 def next_id(entries: list, prefix: str) -> str:
     if not entries:
         return f"{prefix}-001"
-    nums = [int(e["id"].split("-")[-1]) for e in entries if e.get("id", "").startswith(prefix)]
+    # Only count ids whose suffix is purely numeric. A hand-edited id like
+    # "F-abc" (or any non-numeric suffix) is skipped rather than crashing the
+    # whole add command with an uncaught ValueError.
+    nums = []
+    for e in entries:
+        eid = e.get("id", "")
+        if not eid.startswith(prefix):
+            continue
+        suffix = eid.split("-")[-1]
+        if suffix.isdigit():
+            nums.append(int(suffix))
     return f"{prefix}-{(max(nums) + 1):03d}" if nums else f"{prefix}-001"
 
 def now_iso() -> str:
@@ -183,9 +212,13 @@ def query_quality(search_terms: str, top_n: int = 5):
 
 def update_filter(entry_id: str, outcome: str, notes: str = ""):
     """Update the outcome of a filter entry after testing a substitution."""
+    if outcome not in FILTER_OUTCOMES:
+        print(json.dumps({"status": "error",
+                          "message": f"Invalid outcome '{outcome}'. Expected one of: {sorted(FILTER_OUTCOMES)}"}))
+        return
     db = load_db(FILTER_DB)
     for entry in db["entries"]:
-        if entry["id"] == entry_id:
+        if entry.get("id") == entry_id:
             entry["outcome"] = outcome
             entry["fix_confirmed"] = outcome in ("fixed", "workaround")
             entry["substitution_worked"] = outcome == "fixed"
@@ -200,9 +233,13 @@ def update_filter(entry_id: str, outcome: str, notes: str = ""):
 
 def update_quality(entry_id: str, outcome: str, improved_prompt: str = "", notes: str = ""):
     """Update the outcome of a quality entry after testing an improved prompt."""
+    if outcome not in QUALITY_OUTCOMES:
+        print(json.dumps({"status": "error",
+                          "message": f"Invalid outcome '{outcome}'. Expected one of: {sorted(QUALITY_OUTCOMES)}"}))
+        return
     db = load_db(QUALITY_DB)
     for entry in db["entries"]:
-        if entry["id"] == entry_id:
+        if entry.get("id") == entry_id:
             entry["outcome"] = outcome
             entry["fix_confirmed"] = outcome == "improved"
             entry["improvement_confirmed"] = outcome == "improved"
@@ -287,6 +324,7 @@ def export_summary():
         lines.append(f"- **Notes:** {e.get('notes', '')}")
 
     summary = "\n".join(lines)
+    DB_DIR.mkdir(parents=True, exist_ok=True)
     out_path = DB_DIR / "memory-summary.md"
     tmp_path = out_path.with_suffix(".tmp")
     try:
