@@ -132,7 +132,9 @@ SUB_SKILL_DESCRIPTIONS = {
     "higgsfield-moodboard":   "Moodboard + style consistency",
     "higgsfield-pipeline":    "Multi-step production pipeline",
     "higgsfield-cinema":      "Cinema Studio 2.5 + 3.0 + 3.5 (Soul Cast, Image Mode, Cinematic models)",
-    "higgsfield-gpt-image-2": "GPT Image 2.0 prompt director + static-ads workflow satellite",
+    "higgsfield-canvas":      "Node-based Canvas workspace + named patterns + Shared Canvas",
+    "higgsfield-content-factory": "Campaign pipeline (research-plan-generate-publish-report) + cost report",
+    "higgsfield-gpt-image-2": "GPT Image 2.0 director + static-ads + reference-sheet satellites",
     "higgsfield-marketing-studio": "Marketing Studio - 9 ad presets + 4-15s video + cross-surface",
     "higgsfield-recall":      "Pre-generation memory check",
     "higgsfield-vibe-motion": "Vibe Motion / motion graphics",
@@ -1289,7 +1291,7 @@ def build_pdf(dry_run: bool = False):
             ("Can I contribute?",
              "Yes! Fork the repo, add your improvements, and submit a pull request."),
             ("What changed since v3.0.0?",
-             "Thirty platform releases shipped between v3.0.0 (April 2026) and this guide (v3.7.16). "
+             "Thirty-one platform releases shipped between v3.0.0 (April 2026) and this guide (v3.8.0). "
              "Major themes by era: install-path simplification, Seedance 2.0 prompt modes, Kling 3.0 Motion "
              "Control, and Cinema Studio 3.5 with Image Mode + Physics Rendering Decision Matrix "
              "(v3.3.0 through v3.6.x); a v3.7.0 metadata refactor making version and sub-skill discovery "
@@ -1307,7 +1309,12 @@ def build_pdf(dry_run: bool = False):
              "5-pillar translation to vocab.md (Camera Contract / Motion Physics Anchor / Lens Behavior "
              "Sequence / Spatial Zoning / Negative space expansion), and the higgsfield-gpt-image-2 sub-skill "
              "(Format A/B/C prompt taxonomy + static-ads ad-recreation satellite + DTC Ads cross-surface "
-             "expansion). See CHANGELOG.md for full per-release detail."),
+             "expansion); and a v3.8.0 working-folder integration mega-release that added two new sub-skills "
+             "(higgsfield-canvas for the node-based Canvas workspace + Shared Canvas, and higgsfield-content-"
+             "factory for the 5-stage campaign pipeline + publish/report satellite), a product-reference-sheet "
+             "workflow satellite, an anime-animation Seedance template, Higgsfield Collab + Kling Motion "
+             "Control deltas, and the seedance_lint T5 expansion (bracket-notation + NSFW-false-positive + "
+             "GREAT-tier vocabulary). See CHANGELOG.md for full per-release detail."),
         ]
         for q, a in faqs:
             pdf.bold_text(f"Q: {q}")
