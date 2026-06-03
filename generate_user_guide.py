@@ -1291,7 +1291,7 @@ def build_pdf(dry_run: bool = False):
             ("Can I contribute?",
              "Yes! Fork the repo, add your improvements, and submit a pull request."),
             ("What changed since v3.0.0?",
-             "Thirty-one platform releases shipped between v3.0.0 (April 2026) and this guide (v3.8.0). "
+             "Thirty-one platform releases shipped between v3.0.0 (April 2026) and this guide (v3.8.1). "
              "Major themes by era: install-path simplification, Seedance 2.0 prompt modes, Kling 3.0 Motion "
              "Control, and Cinema Studio 3.5 with Image Mode + Physics Rendering Decision Matrix "
              "(v3.3.0 through v3.6.x); a v3.7.0 metadata refactor making version and sub-skill discovery "
@@ -1314,7 +1314,9 @@ def build_pdf(dry_run: bool = False):
              "factory for the 5-stage campaign pipeline + publish/report satellite), a product-reference-sheet "
              "workflow satellite, an anime-animation Seedance template, Higgsfield Collab + Kling Motion "
              "Control deltas, and the seedance_lint T5 expansion (bracket-notation + NSFW-false-positive + "
-             "GREAT-tier vocabulary). See CHANGELOG.md for full per-release detail."),
+             "GREAT-tier vocabulary); and a v3.8.1 tooling-hygiene patch (fpdf2 pinned in requirements.txt, "
+             "a contributing-docs dependency note, and a SKILL.md frontmatter date-drift fix). "
+             "See CHANGELOG.md for full per-release detail."),
         ]
         for q, a in faqs:
             pdf.bold_text(f"Q: {q}")
