@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.8.1 — 2026-06-03
+
+Tooling-hygiene patch. No skill content, model data, or prompt changes — pure repository health for people cloning or downloading from GitHub. Three fixes surfaced by a Cowork pass over a fresh workspace copy:
+
+- **`fpdf2` dependency now pinned + documented.** `generate_user_guide.py` imports `fpdf` (the only third-party dependency in the repo — everything else is pure stdlib), but nothing declared it. Added `requirements.txt` (`fpdf2>=2.8.7,<3`) and a CONTRIBUTING.md step pointing at `pip install -r requirements.txt`, with a note that a failing PDF dry-run in `validate.py` is almost always this missing dependency rather than a defect.
+- **SKILL.md frontmatter date-drift fixed.** `updated:` read `2026-05-18` while the v3.8.0 content and README footer were dated `2026-06-03`; the frontmatter now matches its actual release date. (Cosmetic, not caught by `validate.py`.)
+- **Version touchpoints + USER-GUIDE re-baselined** to v3.8.1 (badge, footer, PDF self-version, accumulating `USER-GUIDE.pdf.baseline-v3.8.1`).
+
 ## v3.8.0 — 2026-06-03
 
 Working-folder integration mega-release, and the first **minor** bump of the 3.7→3.8 line — two new top-level sub-skill surfaces take the sub-skill count from 23 to 25 (the largest structural jump in the series). One release closing the `~/Desktop/WORKING FOLDER` arc: a recursive walk of all five subfolders (ADDITIONAL SKIILS, CANVAS, EVEN MORE SKILLS, LEARNING HUB, OTHER SKIILS) plus a cross-reference pass against everything the v3.7.12–16 burst shipped. Substrate carries from v3.7.13–16 (Adil-corpus translation precedent + parent/satellite architecture + per-claim register-downgrade + DO-NOT-WRITE discipline + `.planning/<version>/` convention + dict-parity PDF gate).
