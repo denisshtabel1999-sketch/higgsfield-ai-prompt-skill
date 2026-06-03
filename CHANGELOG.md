@@ -1,5 +1,86 @@
 # Changelog
 
+## v3.8.0 — 2026-06-03
+
+Working-folder integration mega-release, and the first **minor** bump of the 3.7→3.8 line — two new top-level sub-skill surfaces take the sub-skill count from 23 to 25 (the largest structural jump in the series). One release closing the `~/Desktop/WORKING FOLDER` arc: a recursive walk of all five subfolders (ADDITIONAL SKIILS, CANVAS, EVEN MORE SKILLS, LEARNING HUB, OTHER SKIILS) plus a cross-reference pass against everything the v3.7.12–16 burst shipped. Substrate carries from v3.7.13–16 (Adil-corpus translation precedent + parent/satellite architecture + per-claim register-downgrade + DO-NOT-WRITE discipline + `.planning/<version>/` convention + dict-parity PDF gate).
+
+### Kickoff scope → what the evidence rescoped
+
+Kickoff asked to integrate net-new working-folder documentation and run a cross-reference pass. Phase 0 recursive inventory found the corpus is **mostly already consumed** — `gpt-image-2-director` (v3.7.16), `static-ads` (v3.7.16), `cinematic-motion-language` (v3.7.15), and `marketing-studio-director` (v3.7.13, confirmed FULLY CONSUMED by a line-level delta check) are all prior-release sources; the LEARNING HUB PDF corpus is ~80% already-covered or generic-cross-model. `ad-creative.md` was dropped as a generic non-Higgsfield skill. The genuinely net-new surfaces narrowed to: a 5-stage campaign-orchestration pipeline, the Canvas node workspace, a product-reference-sheet workflow, an anime-animation Seedance genre, Higgsfield Collab, and Kling Motion Control deltas.
+
+### Architectural decisions
+
+- **Canvas = NEW sub-skill** (not a `higgsfield-cinema` §-expansion): Canvas is its own nav-bar product that *hosts* all seven models, so it sits as a model-agnostic sibling, not a child of any one model.
+- **Content Factory = NEW sub-skill + satellite**: the repo pre-reserved the name (`marketing-studio/SKILL.md:43`) and v3.7.13 explicitly deferred the 5-stage pipeline. Marketing Studio is the *engine reference*; Content Factory is the *orchestration layer*. The speculative publish/report tail (Stage 4 Meta Ads + Stage 5 cost report) is isolated in `publish-and-report-workflow.md` so its caveats live in one place.
+- **Reference-sheet = NEW satellite** under `higgsfield-gpt-image-2` (mirrors the `static-ads-workflow.md` precedent).
+- **Collab / Kling deltas = §-expansions** of `higgsfield-workspaces` / `higgsfield-motion` (existing homes).
+- **Anime = NEW template** under `templates/seedance/`.
+- **Video References §-expansion DROPPED** — the `@video_1` read-reliably/less-reliably contract is already shipped verbatim in `higgsfield-camera` § Video Reference (v3.7.1). Only the product-reference half was net-new.
+
+### Web-resolved blockers (search-before-flag discipline)
+
+Per the non-negotiable rule, items that looked blocked were resolved against Higgsfield's own source-of-truth before flagging:
+
+- **G15a Shared Canvas — UNBLOCKED** via `higgsfield.ai/canvas-intro` (real-time link-shared board, Figma-style, auto-versioning, node-attached comments). Shipped in the Canvas sub-skill.
+- **G15b Collab — UNBLOCKED** via `higgsfield.ai/chat-intro` + the Team-Plans blog (shared projects with private/public/open access, real-time chat, audio/video calls, Share-to-Collab toggle, Orgs/Team Plans, karma→credits). Shipped as a workspaces §-expansion.
+
+### Source-evidence discipline
+
+DO-NOT-WRITE lists enforced per gapped surface: **Content Factory** defers all Marketing Studio API ground-truth to `higgsfield-marketing-studio` and reproduces none of the source's known-false API claims (the `generate_video.mode` slug table, nested-`avatars`-in-`params`, the `source` filter field — all refuted in v3.7.13 reconciliations); the Stage 5 traditional-cost dollar figures are framed as a **user-overridable estimate with a mandatory methodology disclaimer, never as Higgsfield fact**; the Meta connector schema is treated as connector-dependent, not asserted. **Canvas** asserts no hard node/fan-in limits, no fixed per-node credit numbers, no plan-gating, and no named on-canvas assistant beyond the generic LLM-assistant node (the audited "Hixie" name appears in no source — see NEEDS PETER below).
+
+### Added
+
+- **NEW `skills/higgsfield-canvas/SKILL.md`** (v1.0.0) — the node-based Canvas workspace. Covers what Canvas is, the node categories, the seven models that run as nodes (Soul 2.0 / Seedance 2.0 / Kling 3.0 / Wan 2.7 / Veo 3.1 / GPT Image 2.0 / Nano Banana Pro), the named canvas patterns (Simple Seedance / Extend Video / Image Edit / StoryBoard With Elements / Long Video fan-out), the build-free/generate-paid cost model, templates + assets-as-nodes, and **Shared Canvas** live collaboration. Translated from `higgsfield.ai/canvas-intro` + in-product screenshots.
+- **NEW `skills/higgsfield-content-factory/SKILL.md`** (v1.0.0) + **`publish-and-report-workflow.md`** satellite — the 5-stage campaign pipeline (Research → Plan → Generate → Publish → Report). Parent carries the UGC-first 5-format taxonomy (UGC Entertainment / Street Interview / Unboxing / Product Review / ASMR) with concept seeds, the `floor(N/5)` even-split math, button-driven onboarding, Stage 1 trend research, the Stage 2 content-plan deliverable, and the Stage 3 per-batch generation gate. Satellite carries the Meta Ads scheduling workflow + the cost-comparison report, both register-downgraded. Translated from Adil Aliyev's `higgsfield-content-factory` source (997 lines) — the orchestration scaffolding v3.7.13 deferred.
+- **NEW `skills/higgsfield-gpt-image-2/reference-sheet-workflow.md` satellite** (v1.0.0) — the Automatic Product Reference Sheet (one image → multi-view studio sheet) + Automatic Prompt Creator workflow. Preserves the GLOBAL IDENTITY LOCK prompt, the prompt-conversion meta-prompt, and two worked examples (hat, golf dress) verbatim as copy/paste assets. Best run with Nano Banana Pro / Nano Banana 2 / GPT Image 2.0. Translated from Higgsfield's official Reference Workflow guide + a companion prompt pack.
+- **NEW `templates/seedance/anime-animation.md`** — anime / stylized-2D Seedance workflow: layered SUBJECT+ACTION+ENVIRONMENT+CAMERA+STYLE+CONSTRAINTS formula, a verbatim reusable anime style block + IP-safe constraint line, and a character-turnaround prompt for identity locking. Translated from a Higgsfield CPP creator (Fotachu) workflow.
+- **NEW `.planning/v3.8.0/`** — `PHASE-0-VERIFICATION.md` (recursive inventory + coverage matrix + backlog-forward classification + architecture options + source-hit counts) and `PHASE-1-INVENTORY.md` (file-by-file plan + per-element translation rules + per-surface DO-NOT-WRITE lists + 19-row decisions register + sub-phase order).
+
+### Changed
+
+- **`seedance_lint.py`** — **T5 expansion** (long-queued backlog): three new checks. (1) **NSFW-false-positive heuristic** (WARN) — dual-use words (bare / exposed / wet / strip / skin / intimate…) that trip provider-side false flags in innocent scenes, with a disambiguation fix. (2) **Bracket-notation check** — `【镜头N】`-style block markers flagged (INFO) as a community delimiter the platform does not parse (the G13 resolved-by-absence finding), plus a malformed-timed-beat WARN. (3) **GREAT-tier vocabulary table** appended to the antislop fix, so a flagged prompt has concrete photographer vocab (lens / lighting / grade / texture / camera body) to rewrite toward. Self-check confirmed PASS / FAIL+WARN+INFO / WARN routing.
+- **`skills/higgsfield-workspaces/SKILL.md`** (v1.1.0 → 1.2.0) — NEW `### Higgsfield Collab` section (shared projects + access levels, real-time chat, audio/video calls, Share-to-Collab, community feed, Orgs/Team-Plans, karma) with a Collab-vs-Shared-Canvas disambiguation callout.
+- **`skills/higgsfield-motion/SKILL.md`** (v3.0.0 → 3.1.0) — Kling Motion Control delta subsection: motion-library-vs-upload source, Matches Video / Matches Image binding modes, element-binding (Matches-Video-only), close-up-face/emotional-transition input, and the "output shorter than source = motion too fast/complex" shortfall diagnostic.
+- **`skills/higgsfield-soul/SKILL.md`** (v3.4.0 → 3.5.0) — § Soul Cinema gains an explicit single-step confirmation (one prompt → one cinematic-grade batch, no compositing) + the standalone Image-tab controls (aspect / resolution / enhancer / batch / Color Transfer / + Character, ~0.125 cr/image). Closes the corrected G1.
+- **`skills/higgsfield-canvas/SKILL.md`** — post-review framing tweak: a "Why Canvas matters for this skill" note positioning Canvas as another surface to deploy this skill's prompts (the Prompt node), plus a Higgsie-is-an-out-of-scope-chatbot clarification.
+- **`skills/higgsfield-seedance/SKILL.md`** (v1.6.0 → 1.7.0) — frontmatter cascade (no content delta this release; Video References §-expansion dropped as already-covered in `higgsfield-camera`).
+- **`skills/higgsfield-gpt-image-2/SKILL.md`** (v1.0.0 → 1.1.0) — intro updated to name the new `reference-sheet-workflow.md` satellite alongside `static-ads-workflow.md`.
+- **Root `SKILL.md`** — frontmatter `3.7.16` → `3.8.0`; two routing-table rows + two sub-skill-list rows (canvas + content-factory); anime template row + `templates/seedance/` count 4 → 5.
+- **`.markdownlint.json`** — `"MD060": false` added, recording the long-deferred table-style decision (mixed leading/trailing pipe-style accepted as a known stylistic preference rather than reformatting ~50+ tables — the backlog's "config disable" option).
+- **`generate_user_guide.py`** — `SUB_SKILL_DESCRIPTIONS` gains the canvas + content-factory entries (forced by the v3.7.16 dict-parity gate — the structural fix for the original v3.7.8 USER-GUIDE drift concern); FAQ §25 count "Thirty" → "Thirty-one", guide version → v3.8.0, + a v3.8.0 era clause.
+- **`validate_user_guide.py`** — `DEFAULT_BASELINE` retarget v3.7.16 → v3.8.0.
+- **`README.md`** — version badge + footer `3.7.16` → `3.8.0`.
+- **`CLAUDE.md`** — `skills/` directory count "21" → "25" (the standing recount-if-drifts instruction; was stale by 4).
+
+### Backlog resolutions
+
+- **G13 (`【镜头N】` block syntax)** — **DROPPED as RESOLVED-BY-ABSENCE.** The working-folder corpus is a 5th surface of absence; the syntax is a community delimiter, not Seedance-native. The T5 bracket-notation check covers the delimiter case.
+- **USER-GUIDE dynamic-content refactor (v3.7.8 concern)** — **RESOLVED by the v3.7.16 dict-parity gate**, which already forces net-new sub-skills to propagate into the PDF or fail the build. The two new sub-skills landed via that gate.
+
+### Verification
+
+- `python3 validate.py` — ALL CHECKS PASSED. 26 SKILL.md files (1 root + 25 sub-skills, up from 24). All frontmatter required fields present on both new sub-skills + the two new satellites; all cross-references resolve (canvas → soul/seedance/motion/gpt-image-2/workspaces/content-factory + model-guide/image-models; content-factory → marketing-studio/gpt-image-2; workspaces → canvas). `[ PDF DRY-RUN SMOKE ]` exit 0 (dict-parity matched for both new sub-skills).
+- `python3 generate_user_guide.py` — 28 pages. `python3 validate_user_guide.py` — PASSED: Layer 0 all 25 dict entries ≤ 71 chars; Layer 1 text-extract diff PASS; Layer 2 byte-for-byte identical to `USER-GUIDE.pdf.baseline-v3.8.0`.
+- `python3 seedance_lint.py` self-check — clean prompt PASS (exit 0); NSFW-FP + antislop + 【镜头】 prompt surfaces all three new rules; malformed-beat WARN fires.
+
+### Backlog closed by Peter clarification (post-build review)
+
+- **G15c — CLOSED, out of scope.** The Canvas assistant is **Higgsie**, a
+  conversational chatbot inside Canvas — not part of the prompt-to-generator
+  pipeline a prompting tool covers. Noted as out-of-scope in the Canvas
+  sub-skill (§ node categories + § source acknowledgment); no documentation
+  owed. Canvas itself is framed as **another surface to deploy this skill's
+  prompts** (the Prompt node) within the Higgsfield workflow — an alternative
+  to going straight to the Image/Video generator or Cinema Studio.
+- **G1 — CLOSED, premise corrected.** Soul Cinema is a **single-step**
+  cinematic-grade scene generator ("describe the scene you imagine" → one
+  batch with a film aesthetic), not a two-step compositing flow — the old G1
+  premise was an external-audit misread. `higgsfield-soul` § Soul Cinema
+  already documented it correctly as the single-step first-pass image model;
+  this release adds an explicit single-step confirmation + the standalone
+  Image-tab controls (aspect / resolution / enhancer / batch / **Color
+  Transfer** / **+ Character**, ~0.125 cr per image). No items remain blocked.
+
 ## v3.7.16 — 2026-05-18
 
 Mega release. Three new content surfaces (`skills/higgsfield-gpt-image-2/SKILL.md` translating Adil Aliyev's `gpt-image-2-director.md` source corpus; `skills/higgsfield-gpt-image-2/static-ads-workflow.md` satellite translating Adil's `static-ads.md`; `skills/higgsfield-marketing-studio/cross-surface-workflow.md` §3 restructure with ms_image / "DTC Ads" coverage expanded within source-evidence boundary), three infrastructure changes (DejaVu Sans Mono code-block font swap + `--dry-run` 7-class exit-code matrix + `validate.py` Phase 4 subprocess integration), one PDF FAQ paragraph refresh (v3.7.13–v3.7.16 era summary), and three cross-reference cite additions in templates + seedance sub-skill. Substrate carries from v3.7.14/15 (DVC font + `--dry-run` + `.planning/<version>/` convention + per-claim register-downgrade discipline).

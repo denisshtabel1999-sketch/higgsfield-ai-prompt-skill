@@ -113,6 +113,41 @@ ANTISLOP = [
     r"\bmind[- ]blowing\b", r"\bjaw[- ]dropping\b",
 ]
 
+# Shot-block markers. The 【镜头N】 ("shot N") marker is a community
+# shot-delimiter convention, NOT a Seedance-native parse token — its absence
+# across the entire audit corpus (3h47m of transcripts + 16 slides + the
+# 604-line director skill + the v3.8.0 working-folder corpus) is the
+# resolved-by-absence finding behind backlog G13. Flag it as a visual
+# delimiter only, so users don't expect the platform to honor it structurally.
+SHOT_BLOCK_MARKERS = [r"【[^】]*】", r"\[\s*镜头\s*\d+\s*\]"]
+
+# Timed beat brackets like [0-2s]. Valid Seedance vocab (see vocab.md). Flagged
+# only when malformed (empty or reversed) — a well-formed beat bracket is fine.
+TIMED_BEAT_OK = re.compile(r"\[\s*\d+\s*[-–]\s*\d+\s*s\s*\]")
+TIMED_BEAT_MALFORMED = re.compile(r"\[\s*[-–]?\s*s\s*\]|\[\s*\d+\s*[-–]\s*s\s*\]")
+
+# Dual-use words that read as innocent in context but repeatedly trip
+# provider-side NSFW *false* positives (the D9 finding). NOT a content
+# violation — a disambiguation nudge. Real NSFW terms are out of scope here;
+# these are the ambiguous-innocent ones (bare branches, wet pavement, strip of
+# fabric, exposed brick, the skin of an apple).
+NSFW_FALSE_POSITIVE = [
+    r"\bstrip(s|ped|ping)?\b(?! (mall|club))", r"\bbare\b", r"\bexposed?\b",
+    r"\bskin\b", r"\bwet\b", r"\bintimate\b", r"\bsensual\b", r"\bseductive\b",
+    r"\bcaress(es|ed|ing)?\b", r"\bmoan(s|ed|ing)?\b",
+]
+
+# GREAT-tier photographer vocabulary — concrete replacements for vague,
+# "good-looking" filler. Surfaced as an INFO nudge when antislop fires, so the
+# rewrite has somewhere specific to go (Stage 2 Hack 2 vocabulary table).
+GREAT_TIER_VOCAB = [
+    "lens — 35mm / 50mm / 85mm / anamorphic",
+    "lighting — golden-hour backlight, hard key + soft fill, practical neon, Rembrandt",
+    "grade — teal-and-orange, bleach-bypass, desaturated film, crushed blacks",
+    "texture — 35mm grain, halation, gate weave, shallow depth of field",
+    "camera body — clean digital / fine film / raw 16mm",
+]
+
 # Sections the filter wants to see — presence of these clauses strongly
 # correlates with passing. Detected by keyword cues, not strict parsing.
 STYLE_MOOD_CUES = [
@@ -224,7 +259,26 @@ def lint(prompt: str) -> list[Finding]:
         findings.append(Finding(
             "WARN", "antislop", ", ".join(sorted(set(hits))),
             "Marketing-copy adjectives correlate with flags — they signal "
-            "vague intent. Replace with observable, measurable details."
+            "vague intent. Replace with observable, measurable details. "
+            "GREAT-tier vocabulary to reach for: "
+            + "; ".join(GREAT_TIER_VOCAB) + "."
+        ))
+
+    hits = _matches(NSFW_FALSE_POSITIVE, text)
+    if hits:
+        findings.append(Finding(
+            "WARN", "nsfw-false-positive", ", ".join(sorted(set(hits))),
+            "Reads innocent in context but repeatedly trips a provider-side "
+            "NSFW false-positive. Disambiguate the noun it modifies — "
+            "'bare branches', 'wet pavement', 'strip of fabric', 'exposed "
+            "brick', 'the skin of the apple' — so the filter can't misread it."
+        ))
+
+    if TIMED_BEAT_MALFORMED.search(text):
+        findings.append(Finding(
+            "WARN", "malformed-beat", "",
+            "Malformed timed-beat bracket. Use a complete range like "
+            "'[0-2s]' / '[2-4s]'. An empty or half-open bracket reads as noise."
         ))
 
     if word_count > 180:
@@ -278,6 +332,17 @@ def lint(prompt: str) -> list[Finding]:
                 "WARN", "contradiction", f"{a} + {b}",
                 message + " Pick one — split into two shots if you need both."
             ))
+
+    block_hits = _matches(SHOT_BLOCK_MARKERS, text)
+    if block_hits:
+        findings.append(Finding(
+            "INFO", "shot-block-marker", ", ".join(sorted(set(block_hits))),
+            "【镜头N】-style block markers are a community shot-delimiter "
+            "convention, not a Seedance-native parse token — the platform "
+            "does not honor them structurally. Use them only as a visual "
+            "delimiter, or structure multi-shot prompts with timed beats "
+            "([0-2s] ...) instead."
+        ))
 
     return findings
 
