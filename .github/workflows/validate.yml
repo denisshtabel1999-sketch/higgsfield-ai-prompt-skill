@@ -1,0 +1,31 @@
+name: validate
+
+# Runs the repo's pre-release health check on every push and PR so frontmatter,
+# relative-path, JSON-schema, version-consistency, and dispatcher/skill-parity
+# regressions are caught automatically instead of relying on a contributor
+# remembering to run validate.py by hand (CONTRIBUTING.md step 5).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        # fpdf2 is needed by generate_user_guide.py, which validate.py invokes
+        # for its PDF dry-run smoke check.
+        run: pip install -r requirements.txt
+
+      - name: Run validate.py
+        run: python3 validate.py

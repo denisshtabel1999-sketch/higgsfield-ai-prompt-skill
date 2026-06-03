@@ -1,5 +1,29 @@
 # Changelog
 
+## v3.8.2 — 2026-06-03
+
+Audit-driven fixes and docs-hygiene patch. No skill content, model data, or prompt changes — repository health, tooling robustness, and one user-facing routing fix surfaced by a full security/bug/gap audit (`docs/archive/AUDIT-2026-06-03.md`).
+
+### User-facing
+
+- **`higgsfield-gpt-image-2` is now routed from the dispatcher.** The fully-built GPT Image 2.0 sub-skill (v1.1.0) was orphaned — reachable only from inside Canvas / Content-Factory / Marketing-Studio, with no row in root `SKILL.md`. Added routing-table + auto-load-table rows, plus a Photodump routing row. Fixed the stale "GPT Image 1.5" → "GPT Image 2.0" model string (SKILL.md:59).
+- **README refreshed** to include the four sub-skills it had been omitting (Canvas, Content Factory, GPT Image 2.0, Marketing Studio) in both the feature list and the structure tree.
+
+### Tooling robustness (Python)
+
+- **`higgsfield_memory.py`:** `next_id` no longer crashes (`ValueError`) on a non-numeric id suffix; `load_db` guarantees a dict-with-list-`entries` shape (no more raw `KeyError`/`AttributeError` on malformed-but-valid JSON); `update-*` validates `outcome` against the documented enum; bare `entry["id"]` subscripts hardened to `.get()`; the `db/` directory is created lazily on write instead of as an import side effect.
+- **`validate.py`:** new dispatcher↔disk parity check (catches orphaned/dangling sub-skills); enforces the `metadata.{version,updated,parent}` contract from CLAUDE.md; cross-checks the CHANGELOG top version against SKILL.md/README; frontmatter version/date parsing anchored to the `metadata:` block; `check_json_db` guards non-dict entries; bare refs to root reference docs are now validated.
+- **`generate_user_guide.py`:** frontmatter parsing anchored to the `metadata:` block; a malformed `updated:` date now raises `FrontmatterError` (exit 2) instead of the exit-1 catch-all; output path uses `REPO_ROOT` (no longer CWD-dependent). Editorial `SUB_SKILL_DESCRIPTIONS` extracted to a dependency-free `sub_skill_descriptions.py` so the validator's Layer 0 no longer needs `fpdf`.
+- **`validate_user_guide.py`:** `DEFAULT_BASELINE` auto-derives the version from SKILL.md (no more hand-bumped constant).
+- **`seedance_lint.py`:** dropped the collision-prone bare `\bye\b` real-name rule and tightened `\bdrake\b` so "ye gods" / "a drake duck" no longer false-FAIL while the rapper is still caught; `--file` reads via `Path.read_text` with a friendly error.
+- **`.claude/commands/release.md`:** the release command now sanitizes `$ARGUMENTS` against `^\d+\.\d+\.\d+$` before shell interpolation.
+
+### Docs hygiene
+
+- **Consolidated** four stale, unreferenced audit/inventory docs (`docs/archive/v3.0.0/*`, `docs/pdf-audit/*`) into a single `docs/archive/HISTORY.md`; removed the empty directories. Captured the full audit as `docs/archive/AUDIT-2026-06-03.md`.
+- **Pruned** 13 superseded `USER-GUIDE.pdf.baseline-*` binary PDFs (~730K). Baseline convention changed from **accumulate → rotate**: only the current baseline is tracked; prior ones are recoverable from git tags.
+- **Added CI:** `.github/workflows/validate.yml` runs `validate.py` on every push/PR.
+
 ## v3.8.1 — 2026-06-03
 
 Tooling-hygiene patch. No skill content, model data, or prompt changes — pure repository health for people cloning or downloading from GitHub. Three fixes surfaced by a Cowork pass over a fresh workspace copy:

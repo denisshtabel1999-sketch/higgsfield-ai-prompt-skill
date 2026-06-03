@@ -70,20 +70,39 @@ class OutputWriteError(BuildError):
     """pdf.output() write failed (disk full, permission, missing path)."""
 
 
+def _metadata_block(fm):
+    """Return only the lines nested under the top-level `metadata:` key.
+
+    version/updated/author all live under `metadata:`. Anchoring the lookups to
+    this block prevents a stray same-named line elsewhere in the frontmatter
+    (e.g. inside the description) from being read as the canonical value.
+    """
+    out, in_meta = [], False
+    for line in fm.splitlines():
+        if re.match(r"^metadata:\s*$", line):
+            in_meta = True
+            continue
+        if in_meta:
+            if line and not line[0].isspace():  # next top-level key ends the block
+                break
+            out.append(line)
+    return "\n".join(out)
+
+
 def read_root_metadata():
-    """Parse root SKILL.md frontmatter for version, updated, author."""
+    """Parse root SKILL.md frontmatter (metadata block) for version, updated, author."""
     text = ROOT_SKILL_PATH.read_text(encoding="utf-8")
     m = re.match(r"^---\s*\n(.*?)\n---\s*\n", text, re.DOTALL)
     if not m:
         raise FrontmatterError(f"No YAML frontmatter found in {ROOT_SKILL_PATH}")
-    fm = m.group(1)
+    meta = _metadata_block(m.group(1))
 
     def field(name, default=None):
-        # Match "name: value" at any indent depth, capture value through end-of-line.
-        match = re.search(rf"^\s*{re.escape(name)}:\s*(.+?)\s*$", fm, re.MULTILINE)
+        # Match "name: value" at any indent depth within the metadata block.
+        match = re.search(rf"^\s*{re.escape(name)}:\s*(.+?)\s*$", meta, re.MULTILINE)
         if not match:
             if default is None:
-                raise FrontmatterError(f"Field '{name}' not found in root SKILL.md frontmatter")
+                raise FrontmatterError(f"Field 'metadata.{name}' not found in root SKILL.md frontmatter")
             return default
         return match.group(1).strip()
 
@@ -114,33 +133,10 @@ def discover_sub_skills():
     return out
 
 
-SUB_SKILL_DESCRIPTIONS = {
-    "higgsfield-prompt":      "MCSLA formula + Seedance 2.0 best practices",
-    "higgsfield-image-shots": "Cinematic image prompting",
-    "higgsfield-models":      "Model selection guide + CS 3.0 comparison",
-    "higgsfield-camera":      "Camera controls + One-Move Rule + Smart Mode + @Video reference",
-    "higgsfield-motion":      "Motion presets + intent-first choreography",
-    "higgsfield-style":       "Visual styles + One Style Anchor Rule",
-    "higgsfield-soul":        "Soul ID + Character Anchor Block + Two-Tool Refinement Pipeline",
-    "higgsfield-stack":       "CLI / MCP / bundled-skills coexistence + two-step preflight",
-    "higgsfield-audio":       "Audio prompting + CS 3.0 native audio (SCELA)",
-    "higgsfield-apps":        "One-click Apps guide (80+)",
-    "higgsfield-recipes":     "Genre templates",
-    "higgsfield-troubleshoot":"Fix generations + CS 3.0 diagnostic tree",
-    "higgsfield-assist":      "Platform copilot + credit optimization",
-    "higgsfield-mixed-media": "Artistic preset overlays",
-    "higgsfield-moodboard":   "Moodboard + style consistency",
-    "higgsfield-pipeline":    "Multi-step production pipeline",
-    "higgsfield-cinema":      "Cinema Studio 2.5 + 3.0 + 3.5 (Soul Cast, Image Mode, Cinematic models)",
-    "higgsfield-canvas":      "Node-based Canvas workspace + named patterns + Shared Canvas",
-    "higgsfield-content-factory": "Campaign pipeline (research-plan-generate-publish-report) + cost report",
-    "higgsfield-gpt-image-2": "GPT Image 2.0 director + static-ads + reference-sheet satellites",
-    "higgsfield-marketing-studio": "Marketing Studio - 9 ad presets + 4-15s video + cross-surface",
-    "higgsfield-recall":      "Pre-generation memory check",
-    "higgsfield-vibe-motion": "Vibe Motion / motion graphics",
-    "higgsfield-seedance":    "Seedance 2.0 + frame coords + spatial layout + named failure modes",
-    "higgsfield-workspaces":  "Workspace-first decision layer",
-}
+# Editorial per-sub-skill summaries live in a dependency-free module so tooling
+# that only needs the data (validate_user_guide.py Layer 0) can import them
+# without the fpdf stack. Re-exported here for backwards compatibility.
+from sub_skill_descriptions import SUB_SKILL_DESCRIPTIONS
 
 
 class UserGuidePDF(FPDF):
@@ -270,8 +266,15 @@ def build_pdf(dry_run: bool = False):
         pdf.alias_nb_pages()
         # Pin creation date to the metadata 'updated' field for reproducible builds.
         # Without this, FPDF2 embeds current time in /CreationDate, breaking
-        # byte-for-byte reproducibility across runs.
-        pdf.set_creation_date(datetime.fromisoformat(META["updated"]))
+        # byte-for-byte reproducibility across runs. A malformed `updated:` value
+        # is a frontmatter error (exit 2), not the exit-1 catch-all.
+        try:
+            creation_date = datetime.fromisoformat(META["updated"])
+        except (TypeError, ValueError) as e:
+            raise FrontmatterError(
+                f"metadata.updated is not an ISO-8601 date: {META['updated']!r} ({e})"
+            )
+        pdf.set_creation_date(creation_date)
 
         # --- COVER PAGE ---
         pdf.add_page()
@@ -1334,11 +1337,13 @@ def build_pdf(dry_run: bool = False):
     if dry_run:
         print(f"DRY-RUN: pipeline OK ({pdf.page_no()} pages). Output NOT written.")
         return
+    out_path = REPO_ROOT / "docs" / "user-guide" / "USER-GUIDE.pdf"
     try:
-        pdf.output("docs/user-guide/USER-GUIDE.pdf")
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        pdf.output(str(out_path))
     except Exception as e:
         raise OutputWriteError(f"PDF write failed: {e}") from e
-    print(f"Generated docs/user-guide/USER-GUIDE.pdf ({pdf.page_no()} pages)")
+    print(f"Generated {out_path.relative_to(REPO_ROOT)} ({pdf.page_no()} pages)")
 
 
 if __name__ == "__main__":

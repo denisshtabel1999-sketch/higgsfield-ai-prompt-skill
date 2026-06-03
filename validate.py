@@ -32,6 +32,17 @@ QUALITY_REQUIRED_FIELDS = {"id", "failure_type", "model_used", "original_prompt"
                             "improvement_confirmed", "tags"}
 # Supported top-level SKILL.md frontmatter attributes (tags now lives inside metadata)
 FRONTMATTER_REQUIRED = {"name", "description", "user-invocable"}
+# Fields that must live nested under `metadata:` per the CLAUDE.md contract.
+# `parent` is required on sub-skills only — the root dispatcher has no parent.
+METADATA_REQUIRED = {"version", "updated"}
+METADATA_REQUIRED_SUBSKILL = {"parent"}
+# Canonical root-level reference docs. Bare backtick refs to these names (no
+# path prefix) are validated to resolve at the repo root; other bare filenames
+# are treated as prose citations and left unchecked (see check_relative_paths).
+ROOT_REFERENCE_DOCS = {
+    "vocab.md", "model-guide.md", "image-models.md", "prompt-examples.md",
+    "photodump-presets.md", "production-benchmarks.md", "DISCIPLINE.md",
+}
 
 PASS = "\033[32m✓\033[0m"
 FAIL = "\033[31m✗\033[0m"
@@ -55,33 +66,75 @@ def warn(label: str, detail: str = ""):
     warnings.append(label)
 
 
+def metadata_block(fm: str) -> str:
+    """Return only the lines nested under the top-level `metadata:` key.
+
+    Anchoring metadata lookups to this block (rather than searching the whole
+    frontmatter) prevents a stray `version:`/`updated:` line elsewhere in the
+    frontmatter from being mistaken for the canonical metadata value.
+    """
+    out, in_meta = [], False
+    for line in fm.splitlines():
+        if re.match(r"^metadata:\s*$", line):
+            in_meta = True
+            continue
+        if in_meta:
+            # A new top-level key (column-0, non-space) ends the metadata block.
+            if line and not line[0].isspace():
+                break
+            out.append(line)
+    return "\n".join(out)
+
+
 def check_frontmatter(skill_file: Path):
+    rel = skill_file.relative_to(ROOT)
     text = skill_file.read_text(encoding="utf-8")
     # Extract YAML frontmatter between --- delimiters
     match = re.match(r"^---\n(.*?)\n---", text, re.DOTALL)
     if not match:
-        check(False, f"{skill_file.relative_to(ROOT)}: missing frontmatter")
+        check(False, f"{rel}: missing frontmatter")
         return
     fm = match.group(1)
     for field in FRONTMATTER_REQUIRED:
         present = re.search(rf"^{field}:", fm, re.MULTILINE) is not None
         if not present:
-            check(False, f"{skill_file.relative_to(ROOT)}: missing frontmatter field '{field}'")
+            check(False, f"{rel}: missing frontmatter field '{field}'")
     # tags should be nested inside metadata, not at the top level
     if re.search(r"^tags:", fm, re.MULTILINE):
-        check(False, f"{skill_file.relative_to(ROOT)}: tags should be inside metadata, not at top level")
+        check(False, f"{rel}: tags should be inside metadata, not at top level")
+    # Enforce the metadata.* contract from CLAUDE.md.
+    meta = metadata_block(fm)
+    if re.search(r"^metadata:\s*$", fm, re.MULTILINE) is None:
+        check(False, f"{rel}: missing 'metadata:' block")
+        return
+    is_root = skill_file.parent == ROOT
+    required = METADATA_REQUIRED if is_root else METADATA_REQUIRED | METADATA_REQUIRED_SUBSKILL
+    for field in sorted(required):
+        if re.search(rf"^\s+{field}:", meta, re.MULTILINE) is None:
+            check(False, f"{rel}: missing metadata.{field}")
 
 
 def check_relative_paths(skill_file: Path):
     text = skill_file.read_text(encoding="utf-8")
-    # Find all relative paths referenced with backticks or markdown links
-    # Matches: `../../../vocab.md` or `skills/higgsfield-prompt/SKILL.md`
+    # 1. Path-style refs (require a `../` or `dir/` prefix) resolve relative to
+    #    the referencing file's own directory.
     refs = re.findall(r'`((?:\.\.\/|[\w-]+\/)[\w./%-]+\.(?:md|py|json))`', text)
-    for ref in refs:
+    for ref in sorted(set(refs)):
         target = (skill_file.parent / ref).resolve()
         exists = target.exists()
         label = f"{skill_file.relative_to(ROOT)}: ref '{ref}'"
         check(exists, label, "" if exists else f"resolves to {target} — not found")
+    # 2. Bare refs (no path prefix) are validated ONLY when they name a known
+    #    root reference doc — those are real cross-link targets that must resolve
+    #    at the repo root. Other bare backtick filenames are left unchecked
+    #    because they're commonly prose citations of external / source-corpus
+    #    files (e.g. `gpt-image-2-director.md`), which are not repo links.
+    bare = re.findall(r'`([\w-]+\.(?:md|py|json))`', text)
+    for ref in sorted(set(bare)):
+        if ref in ROOT_REFERENCE_DOCS:
+            exists = (ROOT / ref).exists()
+            check(exists, f"{skill_file.relative_to(ROOT)}: root ref '{ref}'",
+                  "" if exists else "named as a root reference doc but not found at repo root")
 
 
 def check_json_db(label: str, path: Path, required_fields: set):
@@ -99,12 +152,18 @@ def check_json_db(label: str, path: Path, required_fields: set):
     check(True, f"{label}: valid JSON")
 
     entries = db.get("entries", [])
+    if not isinstance(entries, list):
+        check(False, f"{label}: 'entries' is a list", f"got {type(entries).__name__}")
+        return
     declared = db.get("_total_entries", -1)
     check(len(entries) == declared,
           f"{label}: entry count matches _total_entries",
           f"declared={declared}, actual={len(entries)}")
 
     for entry in entries:
+        if not isinstance(entry, dict):
+            check(False, f"{label}: entry is a JSON object", repr(entry)[:60])
+            continue
         eid = entry.get("id", "?")
         for field in required_fields:
             if field not in entry:
@@ -113,28 +172,38 @@ def check_json_db(label: str, path: Path, required_fields: set):
 
 def check_version_consistency():
     """Cross-check the single-source version/date in root SKILL.md against the
-    README badge and footer. Catches drift like a stale frontmatter `updated:`
-    that the per-file frontmatter check can't see (it validates one file at a
-    time)."""
+    README badge, README footer, and the CHANGELOG.md top entry. Catches drift
+    like a stale frontmatter `updated:` or a forgotten CHANGELOG header that the
+    per-file frontmatter check can't see (it validates one file at a time)."""
     skill = ROOT / "SKILL.md"
     readme = ROOT / "README.md"
-    if not check(skill.exists(), "SKILL.md exists") or not check(readme.exists(), "README.md exists"):
+    changelog = ROOT / "CHANGELOG.md"
+    # Evaluate all three existence checks (don't short-circuit) so each is reported.
+    skill_ok = check(skill.exists(), "SKILL.md exists")
+    readme_ok = check(readme.exists(), "README.md exists")
+    changelog_ok = check(changelog.exists(), "CHANGELOG.md exists")
+    if not (skill_ok and readme_ok and changelog_ok):
         return
 
     fm_match = re.match(r"^---\n(.*?)\n---", skill.read_text(encoding="utf-8"), re.DOTALL)
     if not fm_match:
         check(False, "SKILL.md frontmatter parses")
         return
-    fm = fm_match.group(1)
+    # Anchor version/updated to the nested `metadata:` block so an unrelated
+    # `version:`/`updated:` line elsewhere in the frontmatter can't be read by
+    # mistake (the values are the single source of truth for the whole repo).
+    meta = metadata_block(fm_match.group(1))
     readme_text = readme.read_text(encoding="utf-8")
+    changelog_text = changelog.read_text(encoding="utf-8")
 
-    # SKILL.md version/updated live nested under `metadata:` — allow indentation.
-    skill_version = re.search(r"^\s*version:\s*([0-9]+\.[0-9]+\.[0-9]+)", fm, re.MULTILINE)
-    skill_updated = re.search(r"^\s*updated:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})", fm, re.MULTILINE)
+    skill_version = re.search(r"^\s*version:\s*([0-9]+\.[0-9]+\.[0-9]+)", meta, re.MULTILINE)
+    skill_updated = re.search(r"^\s*updated:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})", meta, re.MULTILINE)
     # README badge: .../badge/version-3.8.1-blue
     badge_version = re.search(r"badge/version-([0-9]+\.[0-9]+\.[0-9]+)-", readme_text)
     # README footer: ... v3.8.1 (updated 2026-06-03) ...
     footer = re.search(r"v([0-9]+\.[0-9]+\.[0-9]+)\s*\(updated\s*([0-9]{4}-[0-9]{2}-[0-9]{2})\)", readme_text)
+    # CHANGELOG top entry: first heading like "## v3.8.1 — 2026-06-03"
+    changelog_top = re.search(r"^##\s*v([0-9]+\.[0-9]+\.[0-9]+)", changelog_text, re.MULTILINE)
 
     if not check(bool(skill_version), "SKILL.md frontmatter has a version"):
         return
@@ -144,10 +213,13 @@ def check_version_consistency():
         return
     if not check(bool(footer), "README footer has 'vX.Y.Z (updated YYYY-MM-DD)'"):
         return
+    if not check(bool(changelog_top), "CHANGELOG.md has a top '## vX.Y.Z' entry"):
+        return
 
     sv, su = skill_version.group(1), skill_updated.group(1)
     bv = badge_version.group(1)
     fv, fu = footer.group(1), footer.group(2)
+    cv = changelog_top.group(1)
 
     check(sv == bv, "SKILL.md version matches README badge",
           "" if sv == bv else f"SKILL.md={sv}, badge={bv}")
@@ -155,6 +227,38 @@ def check_version_consistency():
           "" if sv == fv else f"SKILL.md={sv}, footer={fv}")
     check(su == fu, "SKILL.md updated date matches README footer",
           "" if su == fu else f"SKILL.md={su}, footer={fu}")
+    check(sv == cv, "SKILL.md version matches CHANGELOG top entry",
+          "" if sv == cv else f"SKILL.md={sv}, CHANGELOG={cv}")
+
+
+def check_dispatcher_parity():
+    """Reconcile the skills/ directory against the root SKILL.md dispatcher.
+
+    Every buildable sub-skill on disk must be referenced from root SKILL.md
+    (otherwise it is orphaned — unreachable from the dispatcher), and every
+    higgsfield-* skill named in root SKILL.md must exist on disk (otherwise the
+    route dangles). Catches the exact class of bug where a fully-built sub-skill
+    ships without a routing row."""
+    skills_dir = ROOT / "skills"
+    if not check(skills_dir.exists(), "skills/ directory exists"):
+        return
+    disk_skills = sorted(
+        d.name for d in skills_dir.iterdir()
+        if d.is_dir() and d.name != "shared" and (d / "SKILL.md").exists()
+    )
+    skill_text = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+    referenced = set(re.findall(r"higgsfield-[a-z0-9-]+", skill_text))
+
+    for name in disk_skills:
+        ok = name in referenced
+        check(ok, f"dispatcher routes '{name}'",
+              "" if ok else "built on disk but never referenced in root SKILL.md")
+    for name in sorted(referenced):
+        if name == "higgsfield":  # the skill-family root token, not a sub-skill
+            continue
+        ok = (skills_dir / name).is_dir()
+        check(ok, f"dispatcher ref '{name}' exists on disk",
+              "" if ok else "referenced in root SKILL.md but no matching skills/ dir")
 
 
 def main():
@@ -193,6 +297,10 @@ def main():
     # ── 4. Version / date consistency ───────────────────────────────────────
     print("\n[ VERSION / DATE CONSISTENCY ]")
     check_version_consistency()
+
+    # ── 4b. Dispatcher ↔ disk sub-skill parity ──────────────────────────────
+    print("\n[ DISPATCHER / SKILL PARITY ]")
+    check_dispatcher_parity()
 
     # ── 5. PDF dry-run smoke check ──────────────────────────────────────────
     print("\n[ PDF DRY-RUN SMOKE ]")

@@ -52,16 +52,20 @@ ANYTHING ELSE. Specifically:
     (e.g., a paragraph wrapping differently because a string got longer).
 
 If the validator flags a substantive change, INVESTIGATE before shipping.
-The drift catalog from v3.7.0 scoping (items D3-D8 in
-docs/pdf-audit/AUDIT-REPORT-v3.6.0.md USER-GUIDE expansion row) is the
-work item for INTENTIONAL content updates — those edits should land
-through deliberate hand edits to generate_user_guide.py, then this
-script gets re-baselined to match the new shipped PDF.
+INTENTIONAL content updates (the v3.7.0 "USER-GUIDE expansion" drift catalog,
+items D3-D8 — expanding model tables, sub-skill rows, and FAQ coverage) should
+land through deliberate hand edits to generate_user_guide.py, after which this
+script gets re-baselined to match the new shipped PDF. (The original v3.6.0 PDF
+integration audit that catalogued D3-D8 is preserved in docs/archive/HISTORY.md.)
 
-Baseline files are committed to git alongside the release that produced
-them, matching the existing tracking pattern for docs/user-guide/USER-GUIDE.pdf.
-The "PDF tracks version" invariant has a corresponding "baseline is tracked"
-invariant.
+Baseline convention (v3.8.2+): ROTATE, not accumulate. Only the single
+current baseline (DEFAULT_BASELINE below) is tracked in git — it is the only
+file this validator ever reads. Each release replaces the prior baseline
+rather than adding a new one. Earlier per-release baselines are recoverable
+on demand from their git tags (e.g. `git show v3.8.0:docs/user-guide/USER-GUIDE.pdf`),
+so there is no need to keep near-duplicate binary PDFs in the working tree.
+(Prior to v3.8.2 the convention was to accumulate one baseline per release;
+those 13 superseded baselines were pruned in the v3.8.2 docs-hygiene pass.)
 
 VALIDATION LAYERS
 -----------------
@@ -82,7 +86,8 @@ USAGE
   python3 validate_user_guide.py [baseline_path] [candidate_path]
 
 Defaults:
-  baseline_path  = docs/user-guide/USER-GUIDE.pdf.baseline-v3.7.15
+  baseline_path  = docs/user-guide/USER-GUIDE.pdf.baseline-v<X.Y.Z>
+                   (X.Y.Z auto-derived from the root SKILL.md version)
   candidate_path = docs/user-guide/USER-GUIDE.pdf
 
 Exit code 0 = validation passed (no substantive regressions).
@@ -95,7 +100,26 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent
-DEFAULT_BASELINE = REPO / "docs" / "user-guide" / "USER-GUIDE.pdf.baseline-v3.8.1"
+
+
+def _root_version():
+    """Read the release version from root SKILL.md's metadata block.
+
+    Anchored to an indented `version:` line (the metadata block is the only place
+    a `version:` appears indented). Lets DEFAULT_BASELINE track the current
+    release automatically instead of being hand-bumped each version (rotate
+    convention — see the module docstring)."""
+    try:
+        fm = (REPO / "SKILL.md").read_text(encoding="utf-8")
+    except OSError:
+        return None
+    m = re.search(r"^\s+version:\s*([0-9]+\.[0-9]+\.[0-9]+)", fm, re.MULTILINE)
+    return m.group(1) if m else None
+
+
+_VERSION = _root_version()
+_BASELINE_NAME = f"USER-GUIDE.pdf.baseline-v{_VERSION}" if _VERSION else "USER-GUIDE.pdf.baseline"
+DEFAULT_BASELINE = REPO / "docs" / "user-guide" / _BASELINE_NAME
 DEFAULT_CANDIDATE = REPO / "docs" / "user-guide" / "USER-GUIDE.pdf"
 
 
@@ -150,10 +174,10 @@ def validate_sub_skill_descriptions():
     class where corrected char-count math surfaced only at the next release.
     """
     try:
-        from generate_user_guide import SUB_SKILL_DESCRIPTIONS
+        from sub_skill_descriptions import SUB_SKILL_DESCRIPTIONS
     except ImportError:
         print("[Layer 0] SUB_SKILL_DESCRIPTIONS check: ENVIRONMENT ERROR")
-        print("  Cannot import generate_user_guide. Run validator from repo root.")
+        print("  Cannot import sub_skill_descriptions. Run validator from repo root.")
         sys.exit(2)
 
     overflow = [
