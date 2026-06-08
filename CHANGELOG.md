@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+Cowork file-handling convention. Fixes the issue where uploaded documents (scripts, story bibles, references) and generated files landed anywhere in the project root with no consistent location.
+
+### User-facing
+
+- **New `workspace/` folder with `input/`, `output/`, `processed/` subfolders.** Predictable home for the skill's file I/O in Cowork: you drop documents in `workspace/input/`, the skill writes deliverables to `workspace/output/`, and consumed sources move to `workspace/processed/` (originals relocated, never deleted). Each subfolder carries a README; contents are git-ignored (local-only) so private material is never pushed.
+- **Root `SKILL.md` now governs file handling.** New "Working Folders — file handling" section instructs the skill to read user documents from `workspace/input/` (moving stray uploads there first), write every file deliverable to `workspace/output/`, and move finished inputs to `workspace/processed/`. The `@ Reference Rules` section cross-references it for uploaded documents.
+
 ## v3.8.2 — 2026-06-03
 
 Audit-driven fixes and docs-hygiene patch. No skill content, model data, or prompt changes — repository health, tooling robustness, and one user-facing routing fix surfaced by a full security/bug/gap audit (`docs/archive/AUDIT-2026-06-03.md`).
