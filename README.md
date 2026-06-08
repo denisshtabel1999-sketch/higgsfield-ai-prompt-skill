@@ -1,4 +1,4 @@
-[![Version](https://img.shields.io/badge/version-3.8.2-blue)](https://github.com/OSideMedia/higgsfield-ai-prompt-skill)
+[![Version](https://img.shields.io/badge/version-3.8.3-blue)](https://github.com/OSideMedia/higgsfield-ai-prompt-skill)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Claude%20Cowork%20%7C%20Claude%20Code-purple)](https://github.com/OSideMedia/higgsfield-ai-prompt-skill)
 
@@ -273,4 +273,4 @@ For the full coexistence rules, detection signals, naming-collision callouts, an
 
 ---
 
-Built February 2026 · v3.8.2 (updated 2026-06-03) · Platform: [higgsfield.ai](https://higgsfield.ai)
+Built February 2026 · v3.8.3 (updated 2026-06-08) · Platform: [higgsfield.ai](https://higgsfield.ai)

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v3.8.3 — 2026-06-08
 
 Cowork file-handling convention. Fixes the issue where uploaded documents (scripts, story bibles, references) and generated files landed anywhere in the project root with no consistent location.
 
