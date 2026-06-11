@@ -19,6 +19,7 @@ Usage:
 import argparse
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -325,6 +326,32 @@ def parse_args():
     return parser.parse_args()
 
 
+def check_repo_hygiene():
+    """Fail if generated artifacts are tracked in git.
+
+    Python bytecode was committed once before the .gitignore rule landed
+    (Brief #2 item 3); this check makes that class of regression impossible
+    instead of relying on the ignore file alone (.gitignore does not untrack
+    already-tracked paths)."""
+    try:
+        result = subprocess.run(
+            ["git", "ls-files"], capture_output=True, text=True,
+            cwd=ROOT, timeout=30,
+        )
+    except (OSError, subprocess.TimeoutExpired) as e:
+        skip("git ls-files hygiene scan", f"git unavailable: {e}")
+        return
+    if result.returncode != 0:
+        skip("git ls-files hygiene scan",
+             "not a git checkout — hygiene scan needs git metadata")
+        return
+    tracked = result.stdout.splitlines()
+    bytecode = [p for p in tracked
+                if "__pycache__" in p.split("/") or p.endswith(".pyc")]
+    check(not bytecode, "no Python bytecode tracked in git",
+          "" if not bytecode else f"git rm -r --cached: {', '.join(bytecode[:5])}")
+
+
 def main():
     args = parse_args()
     print(f"\nHiggsfield Skill Repo — Validation Report"
@@ -368,9 +395,12 @@ def main():
     print("\n[ DISPATCHER / SKILL PARITY ]")
     check_dispatcher_parity()
 
+    # ── 4c. Repo hygiene ────────────────────────────────────────────────────
+    print("\n[ HYGIENE ]")
+    check_repo_hygiene()
+
     # ── 5. PDF dry-run smoke check ──────────────────────────────────────────
     print("\n[ PDF DRY-RUN SMOKE ]")
-    import subprocess
     try:
         result = subprocess.run(
             # sys.executable, not "python3": the smoke must run in the SAME
