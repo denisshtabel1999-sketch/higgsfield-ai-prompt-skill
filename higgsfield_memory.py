@@ -15,6 +15,15 @@ Usage:
   python higgsfield_memory.py stats
   python higgsfield_memory.py export-summary
   python higgsfield_memory.py health
+
+Per-project namespacing:
+  python higgsfield_memory.py --project <name> <command> ...
+
+  Routes every command to db/projects/<name>-filter-memory.json /
+  <name>-quality-memory.json instead of the global databases, so
+  production-specific lessons (e.g. one project's dual-instance character
+  workaround) don't pollute global memory. Project DBs are created lazily on
+  first write; reads from a missing project DB return empty results.
 """
 
 import json
@@ -34,6 +43,9 @@ SCRIPT_DIR = Path(__file__).parent
 DB_DIR = Path(os.environ["HF_DB_DIR"]) if os.environ.get("HF_DB_DIR") else SCRIPT_DIR / "db"
 FILTER_DB = DB_DIR / "filter-memory.json"
 QUALITY_DB = DB_DIR / "quality-memory.json"
+# Set by the --project CLI option: project-namespaced DBs are created lazily,
+# so load_db treats a missing file as empty instead of erroring.
+PROJECT_MODE = False
 
 # Allowed outcome values, mirroring the inline documentation on add_filter /
 # add_quality. update-* commands validate against these so a typo (e.g.
@@ -48,6 +60,8 @@ def load_db(path: Path) -> dict:
         with open(path, "r", encoding="utf-8") as f:
             db = json.load(f)
     except FileNotFoundError:
+        if PROJECT_MODE:
+            return {"entries": []}
         print(json.dumps({"status": "error", "message": f"Database file not found: {path}"}))
         sys.exit(1)
     except json.JSONDecodeError as e:
@@ -294,8 +308,11 @@ def stats():
     }, indent=2))
 
 
-def export_summary():
-    """Export a human-readable markdown summary of both databases."""
+def build_summary() -> str:
+    """Render the markdown summary of both databases (no file writes).
+
+    Split out from export_summary so validate.py can compare a fresh render
+    against db/memory-summary.md without side effects."""
     f_db = load_db(FILTER_DB)
     q_db = load_db(QUALITY_DB)
 
@@ -326,7 +343,12 @@ def export_summary():
         lines.append(f"- **Outcome:** {e.get('outcome', 'unknown')}")
         lines.append(f"- **Notes:** {e.get('notes', '')}")
 
-    summary = "\n".join(lines)
+    return "\n".join(lines)
+
+
+def export_summary():
+    """Write the markdown summary of both databases to db/memory-summary.md."""
+    summary = build_summary()
     DB_DIR.mkdir(parents=True, exist_ok=True)
     out_path = DB_DIR / "memory-summary.md"
     tmp_path = out_path.with_suffix(".tmp")
@@ -338,6 +360,8 @@ def export_summary():
         tmp_path.unlink(missing_ok=True)
         print(json.dumps({"status": "error", "message": f"Failed to write summary: {e}"}))
         sys.exit(1)
+    f_db = load_db(FILTER_DB)
+    q_db = load_db(QUALITY_DB)
     print(json.dumps({"status": "ok", "path": str(out_path), "filter_entries": len(f_db["entries"]), "quality_entries": len(q_db["entries"])}))
 
 
@@ -382,6 +406,25 @@ def health():
 # ── Entry Point ────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
+    # Global --project option: redirect both DBs to a per-project namespace
+    # under db/projects/ so production-specific lessons stay scoped.
+    if "--project" in sys.argv:
+        idx = sys.argv.index("--project")
+        if idx + 1 >= len(sys.argv):
+            print(json.dumps({"status": "error",
+                              "message": "--project requires a project name"}))
+            sys.exit(1)
+        project = sys.argv[idx + 1]
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", project):
+            print(json.dumps({"status": "error",
+                              "message": f"Invalid project name: {project!r} "
+                                         "(alphanumeric, dash, underscore)"}))
+            sys.exit(1)
+        del sys.argv[idx:idx + 2]
+        PROJECT_MODE = True
+        FILTER_DB = DB_DIR / "projects" / f"{project}-filter-memory.json"
+        QUALITY_DB = DB_DIR / "projects" / f"{project}-quality-memory.json"
+
     if len(sys.argv) < 2:
         print(__doc__)
         sys.exit(1)

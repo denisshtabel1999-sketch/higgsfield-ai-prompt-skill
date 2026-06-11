@@ -504,6 +504,44 @@ def check_description_coverage():
           "" if not orphans else f"no skills/ dir for: {', '.join(orphans)}")
 
 
+def check_memory_summary():
+    """Keep db/memory-summary.md in step with the memory databases.
+
+    The summary was generated once (2026-03-08) and silently went stale as
+    entries accumulated. Compare a fresh render (timestamp line excluded)
+    against the file; regenerate automatically on drift so the human-readable
+    view can never lag the databases again."""
+    summary_path = ROOT / "db" / "memory-summary.md"
+
+    def body(text: str) -> str:
+        return "\n".join(l for l in text.splitlines()
+                         if not l.startswith("Generated:"))
+
+    try:
+        import higgsfield_memory as hm
+        fresh = hm.build_summary()
+    except SystemExit:
+        check(False, "memory summary renders", "memory databases missing/corrupt")
+        return
+    except Exception as e:  # noqa: BLE001
+        check(False, "memory summary renders", f"{type(e).__name__}: {e}")
+        return
+
+    if summary_path.exists() and body(summary_path.read_text(encoding="utf-8")) == body(fresh):
+        check(True, "db/memory-summary.md is current")
+        return
+
+    warn("db/memory-summary.md was stale — regenerated",
+         "review and commit the refreshed summary")
+    tmp = summary_path.with_suffix(".tmp")
+    try:
+        tmp.write_text(fresh, encoding="utf-8")
+        tmp.replace(summary_path)
+    except OSError as e:
+        tmp.unlink(missing_ok=True)
+        check(False, "memory summary regeneration", str(e))
+
+
 def check_repo_hygiene():
     """Fail if generated artifacts are tracked in git.
 
@@ -579,7 +617,11 @@ def main():
     print("\n[ MODEL SPECS ]")
     check_model_specs()
 
-    # ── 4d. Repo hygiene ────────────────────────────────────────────────────
+    # ── 4d. Learning-memory summary freshness ───────────────────────────────
+    print("\n[ MEMORY ]")
+    check_memory_summary()
+
+    # ── 4e. Repo hygiene ────────────────────────────────────────────────────
     print("\n[ HYGIENE ]")
     check_repo_hygiene()
 

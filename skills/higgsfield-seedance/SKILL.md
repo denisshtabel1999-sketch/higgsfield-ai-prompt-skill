@@ -1251,9 +1251,19 @@ If the user tells you Seedance has flagged them multiple times in a row:
 2. **Run the preflight linter** on that exact text.
 3. **Apply the rewrite playbook** for every rule the linter hit.
 4. **Do a voice pass** (add Style & Mood, name the camera, present-tense physics).
-5. **Log the fix** to the filter-memory database at the project root so future
-   sessions benefit — use `higgsfield_memory.py` (at the project root) to append
-   an entry describing the blocked prompt, the substitution, and whether it worked.
+5. **Log the outcome** to the learning memory so future sessions benefit. These
+   are concrete steps, not optional polish — the memory system only learns if
+   outcomes actually get written:
+   - After a rewrite **passes Seedance's filter in a real generation**, log it
+     as a confirmed workaround:
+     `python3 seedance_lint.py --confirmed "<the prompt that passed>"`
+   - If you logged a predicted rejection earlier (`--log`) and later learn the
+     outcome: `python3 higgsfield_memory.py update-filter <id> <fixed|workaround|still-blocked>`
+   - After a **quality fix** is confirmed (motion, identity, blocking — not a
+     filter issue): `python3 higgsfield_memory.py add-quality '<json entry>'`
+     with the original prompt, the failure description, and the improved prompt.
+   - For production-specific lessons that shouldn't pollute global memory, add
+     `--project <name>` (entries land in `../../db/projects/`).
 
 Do not let the user regenerate the same prompt with one word changed. That
 is the loop that wastes hours.
