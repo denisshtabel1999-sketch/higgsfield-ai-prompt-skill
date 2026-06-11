@@ -12,9 +12,11 @@ Checks:
   - Root SKILL.md version/updated agree with the README badge + footer
 
 Usage:
-  python validate.py
+  python validate.py            # standard run — optional-dep checks may SKIP
+  python validate.py --strict   # release mode — SKIPs become failures
 """
 
+import argparse
 import json
 import re
 import sys
@@ -47,9 +49,15 @@ ROOT_REFERENCE_DOCS = {
 PASS = "\033[32m✓\033[0m"
 FAIL = "\033[31m✗\033[0m"
 WARN = "\033[33m⚠\033[0m"
+SKIP = "\033[36m∅\033[0m"
 
 issues = []
 warnings = []
+# Checks that could not run because an OPTIONAL dependency is missing (e.g. the
+# PDF smoke test without fpdf2). A skip is not a failure on a contributor
+# machine — the repo's content checks all still ran — but a release build must
+# not ship with anything unverified, so --strict promotes skips to issues.
+skips = []
 
 
 def check(ok: bool, label: str, detail: str = "") -> bool:
@@ -64,6 +72,11 @@ def check(ok: bool, label: str, detail: str = "") -> bool:
 def warn(label: str, detail: str = ""):
     print(f"  {WARN} {label}" + (f"  ({detail})" if detail else ""))
     warnings.append(label)
+
+
+def skip(label: str, detail: str = ""):
+    print(f"  {SKIP} {label}" + (f"  ({detail})" if detail else "") + "  [SKIP]")
+    skips.append(f"{label}" + (f"  ({detail})" if detail else ""))
 
 
 def metadata_block(fm: str) -> str:
@@ -261,8 +274,19 @@ def check_dispatcher_parity():
               "" if ok else "referenced in root SKILL.md but no matching skills/ dir")
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Pre-release health check for the Higgsfield skill repo.")
+    parser.add_argument("--strict", action="store_true",
+                        help="Release mode: optional-dependency SKIPs become "
+                             "failures (use for release builds / CI).")
+    return parser.parse_args()
+
+
 def main():
-    print(f"\nHiggsfield Skill Repo — Validation Report")
+    args = parse_args()
+    print(f"\nHiggsfield Skill Repo — Validation Report"
+          + (" (--strict)" if args.strict else ""))
     print(f"Root: {ROOT}\n")
 
     # ── 1. Find all SKILL.md files ──────────────────────────────────────────
@@ -307,7 +331,10 @@ def main():
     import subprocess
     try:
         result = subprocess.run(
-            ["python3", str(ROOT / "generate_user_guide.py"), "--dry-run"],
+            # sys.executable, not "python3": the smoke must run in the SAME
+            # environment as this validator, or a bare venv would silently
+            # borrow the system interpreter's fpdf2 and mask the skip path.
+            [sys.executable, str(ROOT / "generate_user_guide.py"), "--dry-run"],
             capture_output=True,
             text=True,
             timeout=60,
@@ -317,6 +344,13 @@ def main():
     else:
         if result.returncode == 0:
             check(True, "generate_user_guide.py --dry-run", "exit 0")
+        elif re.search(r"ModuleNotFoundError: No module named ['\"]?fpdf",
+                       result.stderr or ""):
+            # fpdf2 is an OPTIONAL dependency (requirements.txt: only the PDF
+            # generator needs it). Every content check above already ran, so a
+            # missing PDF toolchain must not report the repo as broken.
+            skip("generate_user_guide.py --dry-run",
+                 "optional dep fpdf2 not installed — pip install -r requirements.txt")
         else:
             stderr_lines = result.stderr.strip().splitlines() if result.stderr else []
             stderr_excerpt = stderr_lines[0] if stderr_lines else "(no stderr output)"
@@ -328,14 +362,22 @@ def main():
 
     # ── Summary ─────────────────────────────────────────────────────────────
     print(f"\n{'='*50}")
+    if args.strict and skips:
+        # A release build may not ship with unverified surfaces.
+        for s in skips:
+            issues.append(f"[strict] skipped check must pass for release: {s}")
     if issues:
         print(f"\033[31m  FAILED — {len(issues)} issue(s) found:\033[0m")
         for i in issues:
             print(f"    • {i}")
         sys.exit(1)
     else:
-        print(f"\033[32m  ALL CHECKS PASSED\033[0m" +
-              (f" ({len(warnings)} warning(s))" if warnings else ""))
+        suffix = ""
+        if warnings:
+            suffix += f" ({len(warnings)} warning(s))"
+        if skips:
+            suffix += f" ({len(skips)} skipped — optional deps; --strict to enforce)"
+        print(f"\033[32m  ALL CHECKS PASSED\033[0m{suffix}")
         sys.exit(0)
 
 
