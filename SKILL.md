@@ -12,7 +12,7 @@ description: >
 user-invocable: true
 metadata:
   tags: [higgsfield, video, image, prompt, cinematic, AI, filmmaking, motion, camera]
-  version: 3.9.0
+  version: 3.10.0
   updated: 2026-06-11
   author: O-Side Media
   license: MIT
@@ -161,6 +161,8 @@ budget constraints, client work), **confirm before generating:**
 | Vibe Motion, motion graphics, kinetic typography, brand animation | `higgsfield-vibe-motion` |
 | Animated text, logo animation, Remotion-based output | `higgsfield-vibe-motion` |
 | Pre-generation memory check, apply past failure fixes | `higgsfield-recall` |
+| User reports a generation result (kept/rejected/flagged) — log it to the ledger | `higgsfield-recall` |
+| Takes-per-kept ratios, credit budgeting from logged data | `higgsfield-assist` |
 | Audio design, dialogue cues, SFX, ambient sound | `higgsfield-audio` |
 | Seedance 2.0 / Pro prompt, flagged prompt, credit waste on Seedance | `higgsfield-seedance` |
 | User has Higgsfield CLI / MCP / bundled skills installed and asks how this skill works alongside them | `higgsfield-stack` |
@@ -258,6 +260,21 @@ Quick summary — five layers, every prompt:
 - Output a clean, ready-to-paste prompt — no meta-commentary after
 - Do not explain what every line does unless the user asks
 - Always name the camera control and motion preset explicitly
+
+---
+
+## Generation Ledger — log every result
+
+Every generation attempt the user reports — kept, rejected, or filter-flagged —
+gets one row in `db/ledger/<project>.json`. The denominator (successes too,
+not just failures) is what turns the memory system into takes-per-kept ratios
+and credit budgets.
+
+**The 5-second rule:** when the user reports a result, ask at most ONE
+question ("keep or reject — what failed?") and write the row yourself with
+one `higgsfield_memory.py log-gen` command. Never ask twice; never present a
+form. Full workflow: `skills/higgsfield-recall/SKILL.md` § Log the Generation
+Result. Ratios and budgeting: `skills/higgsfield-assist/SKILL.md`.
 
 ---
 

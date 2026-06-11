@@ -618,6 +618,68 @@ def check_memory_summary():
         check(False, "memory summary regeneration", str(e))
 
 
+def check_ledger():
+    """Generation-ledger integrity (db/ledger/ — see its README.md).
+
+    Every project ledger is schema-checked row by row (required fields,
+    controlled-vocabulary membership, outcome enum, model ids against the
+    specs layer, append-only supersedes rules, unique ids); the generated
+    _global.json view is regenerated on drift like memory-summary."""
+    try:
+        import higgsfield_memory as hm
+    except ImportError as e:
+        check(False, "higgsfield_memory imports", str(e))
+        return
+    ledger_dir = ROOT / "db" / "ledger"
+    if not ledger_dir.is_dir():
+        skip("db/ledger/ directory", "not created yet — nothing to check")
+        return
+    model_ids = hm.load_specs_models()
+    check(bool(model_ids), "specs model ids available for ledger validation")
+
+    for path in sorted(ledger_dir.glob("*.json")):
+        if path.name == "_global.json":
+            continue
+        rel = path.relative_to(ROOT)
+        try:
+            db = json.loads(path.read_text(encoding="utf-8"))
+            rows = db["rows"]
+            assert isinstance(rows, list)
+        except Exception as e:  # noqa: BLE001
+            check(False, f"{rel}: readable ledger (dict with rows list)",
+                  f"{type(e).__name__}: {e}")
+            continue
+        problems, prior, superseded = [], set(), set()
+        for row in rows:
+            if not isinstance(row, dict):
+                problems.append(f"non-object row: {repr(row)[:50]}")
+                continue
+            if row.get("id") in prior:
+                problems.append(f"duplicate id {row.get('id')}")
+            problems.extend(hm.validate_ledger_row(
+                row, path.stem, prior, superseded, model_ids))
+            if row.get("supersedes"):
+                superseded.add(row["supersedes"])
+            prior.add(row.get("id"))
+        check(not problems, f"{rel}: {len(rows)} row(s) schema-valid",
+              "" if not problems else "; ".join(problems[:3])
+              + (f" (+{len(problems) - 3} more)" if len(problems) > 3 else ""))
+
+    # _global.json is a generated view — regenerate on drift.
+    fresh = hm.build_global()
+    global_path = ledger_dir / "_global.json"
+    try:
+        on_disk = json.loads(global_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        on_disk = None
+    if on_disk == fresh:
+        check(True, "db/ledger/_global.json matches regeneration")
+    else:
+        warn("db/ledger/_global.json was stale — regenerated",
+             "commit the refreshed view (generated, never hand-edit)")
+        hm.write_global()
+
+
 def check_hard_rules_canonical():
     """Root SKILL.md is the single home of the HARD RULES checklist.
 
@@ -750,7 +812,11 @@ def main():
     print("\n[ MEMORY ]")
     check_memory_summary()
 
-    # ── 4f. HARD RULES canonical home ───────────────────────────────────────
+    # ── 4f. Generation ledger ───────────────────────────────────────────────
+    print("\n[ LEDGER ]")
+    check_ledger()
+
+    # ── 4g. HARD RULES canonical home ───────────────────────────────────────
     print("\n[ HARD RULES ]")
     check_hard_rules_canonical()
 

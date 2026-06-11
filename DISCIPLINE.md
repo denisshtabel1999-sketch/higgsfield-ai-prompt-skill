@@ -102,6 +102,25 @@ committed to up front.
 cinema success criteria (5-criterion rubric committed before
 generation began).
 
+### Log-Every-Generation
+
+Every generation attempt — kept, rejected, or filter-flagged — gets one
+row in the generation ledger (`db/ledger/`). Failure-only logging cannot
+produce hit rates; the denominator (successes too) is what turns memory
+into takes-per-kept ratios and credit budgets. The write path obeys the
+**5-second rule**: at most one short command or one agent question
+("keep or reject — what failed?"), never a form — if logging costs more
+attention than that, adoption dies by week two.
+
+**When to apply:** Every generation the user reports a verdict on, in
+any Higgsfield workflow. Corrections are superseding rows (`amend-gen`),
+never edits — history is append-only.
+
+**Demonstrated in:** `db/ledger/README.md` (schema + controlled
+vocabularies) + `skills/higgsfield-recall/SKILL.md` § Log the Generation
+Result (agent-side hook) + `skills/higgsfield-assist/SKILL.md` § Quote
+From the Ledger, Not From Vibes (read path).
+
 ## Tier 2 — Output Discipline
 
 ### Visual-Marker-Only Output Discipline

@@ -1,5 +1,30 @@
 # Changelog
 
+## v3.10.0 — 2026-06-11
+
+Generation Ledger (Brief #3) — a **new capability**, not a fix: an empirical hit-rate system that converts unknown generation risk into priced risk. The existing quality memory is a failure ledger; it has no denominator. The ledger logs **every** generation attempt (kept, rejected, filter-flagged), so after ~30–40 rows a production has real takes-per-kept ratios per shot type and can quote credit estimates before generating. One commit per brief item.
+
+### The ledger (item 1)
+
+- **New `db/ledger/` family:** one append-only JSON per project plus a generated `db/ledger/_global.json` cross-project view (underscore-prefixed ledgers — `_global`, `_demo` — are reserved and excluded from aggregation). Rows carry model (canonical specs id, aliases resolved at write), 1–3 `shot_tags` and `reject_reason` from **controlled vocabularies** (13 + 11 values; extend via PR, never ad hoc), `draft_tier`, optional credits/scene/prompt-hash. **History is never edited** — corrections are superseding rows; each id is maskable at most once. Schema + vocabularies + the structural-vs-stochastic classification table documented in `db/ledger/README.md`.
+
+### Write path (item 2)
+
+- **`higgsfield_memory.py log-gen <project>`** — one-line flags form or raw JSON; `last-gen`; `amend-gen <id> field=value` (full-clone superseding row; refuses to amend an already-superseded id). Every write validates against the vocabularies + specs model ids and regenerates `_global.json`.
+- **Agent-side hook under the 5-second rule** (root SKILL.md § Generation Ledger + higgsfield-recall § Log the Generation Result): when the user reports a result, the agent asks at most one question ("keep or reject — what failed?"), writes the row itself, and never nags twice. The human never formats JSON.
+- **Lint loopback bridge:** `seedance_lint.py --log` (new `--project` flag) also writes an `outcome=flagged` ledger row on filter FAILs — filter burns are part of the real ratio. Without `--model` it prints a hint instead; model ids are never fabricated.
+- **`validate.py [ LEDGER ]`:** row-by-row schema checks on every project ledger + `_global.json` drift regeneration.
+
+### Read path (item 3)
+
+- **`ratio <project> [--model] [--tag] [--global] [--credits]`** — takes-per-kept table per shot tag: draft-tier rows excluded (reported as one draft-burn line), **structural vs stochastic rejection split per row** (fix-the-prompt vs re-roll territory — the whole diagnostic value), `low-n` guards under 5 rows instead of fake precision, and a subpopulation-consistent credits-per-kept money view with coverage annotations.
+- **`db/ledger/_demo.json`** fixture + **23 pytest cases** (`tests/test_ledger.py`) assert the math against hand-computed numbers — including that a superseded row's rejection and credits provably vanish from every statistic.
+
+### Budgeting + integration (item 4)
+
+- **`budget <project> --shots <manifest.json|csv>`** — multiplies a planned shot manifest by the project's ratios (global fallback, then documented default planning ratios 2–3:1 simple / 4–6:1 complex **labeled as defaults, not data**) → expected generations + credit estimate with stated coverage and confidence.
+- **higgsfield-assist § Quote From the Ledger, Not From Vibes** (run `ratio`/`budget` before quoting any multi-shot estimate; never budget from low-n rows). **DISCIPLINE.md Tier 1 § Log-Every-Generation.** `export-summary` now shows current ratios in `db/memory-summary.md`.
+
 ## v3.9.0 — 2026-06-11
 
 Improvement-briefs mega-release. Implements every numbered item from the two production-grounded improvement briefs (content layer + tooling layer, both dated 2026-06-11), one commit per item. The headline: a machine-readable **specs layer** generated from a live `models_explore` snapshot now anchors model facts repo-wide — the change that removes the library's biggest failure mode, confidently wrong numbers (the guide shipped "Seedance 2.0 — 10s" while the live API said 4–15s).

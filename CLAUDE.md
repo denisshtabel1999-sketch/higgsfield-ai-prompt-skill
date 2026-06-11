@@ -32,6 +32,8 @@ tests/                    ← pytest suite for the Python tooling (CI-run)
 skills/                   ← 25 sub-skill directories + shared/
 templates/                ← 10 genre templates
 db/                       ← Filter + quality memory JSON databases
+db/ledger/                ← Generation ledger (one append-only file per project;
+                            _global.json generated; see db/ledger/README.md)
 docs/                     ← Extended reference documents
 .claude/
   ├── settings.json       ← Permission rules

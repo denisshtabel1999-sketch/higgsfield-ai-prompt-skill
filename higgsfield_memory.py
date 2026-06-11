@@ -16,6 +16,14 @@ Usage:
   python higgsfield_memory.py export-summary
   python higgsfield_memory.py health
 
+Generation ledger (db/ledger/ — see db/ledger/README.md):
+  python higgsfield_memory.py log-gen <project> --model X --tags a,b --outcome kept
+  python higgsfield_memory.py log-gen <project> '<json row>'
+  python higgsfield_memory.py last-gen <project>
+  python higgsfield_memory.py amend-gen <id> outcome=kept   # superseding row
+  python higgsfield_memory.py ratio <project> [--model X] [--tag Y] [--global] [--credits]
+  python higgsfield_memory.py budget <project> --shots <manifest.json|csv>
+
 Per-project namespacing:
   python higgsfield_memory.py --project <name> <command> ...
 
@@ -137,6 +145,700 @@ def relevance_score(entry: dict, query_tokens: set) -> int:
     ]).lower()
     entry_tokens = tokenize(text)
     return len(query_tokens & entry_tokens)
+
+
+# ── Generation Ledger ──────────────────────────────────────────────────────────
+# Empirical hit-rate system (Brief #3). Unlike the filter/quality memories
+# (failure ledgers), this logs EVERY generation attempt — kept, rejected, or
+# filter-flagged — so takes-per-kept ratios have a denominator. Rows are
+# APPEND-ONLY: corrections are new rows with `supersedes`, never edits.
+# Full schema + vocabulary docs: db/ledger/README.md.
+
+LEDGER_DIR = DB_DIR / "ledger"
+GLOBAL_LEDGER = LEDGER_DIR / "_global.json"
+PROJECT_NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]*")
+GEN_ID_RE = re.compile(r"^(.+)-(\d{4})$")
+
+# Controlled vocabularies (extend via PR, never ad hoc — free-text tags
+# fragment and kill aggregation).
+SHOT_TAGS = {
+    "establishing", "dialogue-cu", "dialogue-multi", "action-melee",
+    "action-chase", "insert-prop", "vfx-event", "two-char",
+    "multi-char-3plus", "dual-instance", "pov", "environment-only",
+    "creature-occluded",
+}
+REJECT_REASONS = {
+    "identity-drift", "wardrobe-contamination", "extra-cuts",
+    "blocking-broken", "performance", "camera-wrong", "physics",
+    "text-render", "filter-flagged", "composition", "other",
+}
+# The split that carries the diagnostic value: structural rejections mean
+# "fix the prompt, don't re-roll"; stochastic mean "re-roll territory".
+# `other` belongs to neither class (counts in n only).
+STRUCTURAL_REASONS = {"identity-drift", "wardrobe-contamination", "extra-cuts",
+                      "blocking-broken", "text-render", "filter-flagged"}
+STOCHASTIC_REASONS = {"performance", "camera-wrong", "physics", "composition"}
+OUTCOMES = {"kept", "rejected", "flagged"}
+
+# Default planning ratios for budget estimates when the ledger has no usable
+# data for a tag (n<5 or kept=0). These are DEFAULTS, NOT DATA — the brief's
+# documented planning bands: 2-3:1 simple, 4-6:1 complex (midpoints used).
+DEFAULT_RATIOS = {
+    "establishing": 2.5, "dialogue-cu": 2.5, "insert-prop": 2.5,
+    "environment-only": 2.5, "pov": 2.5,
+    "dialogue-multi": 5.0, "action-melee": 5.0, "action-chase": 5.0,
+    "vfx-event": 5.0, "multi-char-3plus": 5.0, "dual-instance": 5.0,
+    "creature-occluded": 5.0,
+    "two-char": 3.0,
+}
+LOW_N_THRESHOLD = 5
+
+_LEDGER_REQUIRED = {"id", "ts", "model", "shot_tags", "outcome", "draft_tier"}
+_LEDGER_OPTIONAL = {"mode", "resolution", "aspect", "duration_s", "internal_cuts",
+                    "scene_ref", "prompt_hash", "credits", "notes",
+                    "supersedes", "reject_reason", "project"}
+
+
+def load_specs_models() -> dict:
+    """{id_or_alias: canonical_id} from specs/model-specs.json.
+
+    Ledger rows store CANONICAL ids only (aliases resolved at write time) so
+    per-model credit averages can't fragment across an alias. Returns {} when
+    the specs layer is missing — callers decide whether that's fatal."""
+    path = SCRIPT_DIR / "specs" / "model-specs.json"
+    try:
+        spec = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    mapping: dict = {}
+    for m in spec.get("models", []):
+        mapping[m["id"]] = m["id"]
+        for alias in m.get("aliases", []):
+            mapping[alias] = m["id"]
+    return mapping
+
+
+def ledger_path(project: str) -> Path:
+    if not PROJECT_NAME_RE.fullmatch(project):
+        print(json.dumps({"status": "error",
+                          "message": f"Invalid project name: {project!r} "
+                                     "(alphanumeric, dash, underscore)"}))
+        sys.exit(1)
+    return LEDGER_DIR / f"{project}.json"
+
+
+def load_ledger(path: Path) -> dict:
+    """Ledger file shape: {project, _last_updated, _total_rows, rows}.
+    A missing file is an empty ledger (projects bootstrap on first write)."""
+    try:
+        db = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {"project": path.stem, "rows": []}
+    except (OSError, json.JSONDecodeError) as e:
+        print(json.dumps({"status": "error",
+                          "message": f"Ledger file unreadable: {path}: {e}"}))
+        sys.exit(1)
+    if not isinstance(db, dict) or not isinstance(db.get("rows", []), list):
+        print(json.dumps({"status": "error",
+                          "message": f"Ledger file malformed (need dict with rows list): {path}"}))
+        sys.exit(1)
+    db.setdefault("project", path.stem)
+    db.setdefault("rows", [])
+    return db
+
+
+def save_ledger(path: Path, db: dict):
+    db["_last_updated"] = now_iso()
+    db["_total_rows"] = len(db["rows"])
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_suffix(".tmp")
+    try:
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(db, f, indent=2, ensure_ascii=False)
+        tmp_path.replace(path)
+    except OSError as e:
+        tmp_path.unlink(missing_ok=True)
+        print(json.dumps({"status": "error", "message": f"Failed to save ledger: {e}"}))
+        sys.exit(1)
+
+
+def next_gen_id(project: str, rows: list) -> str:
+    nums = []
+    for r in rows:
+        m = GEN_ID_RE.match(r.get("id", ""))
+        if m and m.group(1) == project:
+            nums.append(int(m.group(2)))
+    return f"{project}-{(max(nums) + 1) if nums else 1:04d}"
+
+
+def validate_ledger_row(row: dict, project: str, prior_ids: set,
+                        superseded_ids: set, model_ids: dict) -> list:
+    """Schema check for one row. Returns a list of problem strings.
+
+    `prior_ids` = ids of rows EARLIER in the same file (supersedes may only
+    point backward); `superseded_ids` = ids already masked by an earlier
+    row's supersedes (each id is maskable at most once — amend an amendment
+    by superseding the previous amendment, never the original twice)."""
+    problems = []
+    rid = row.get("id", "?")
+
+    missing = _LEDGER_REQUIRED - set(row)
+    if missing:
+        problems.append(f"{rid}: missing required field(s): {', '.join(sorted(missing))}")
+    unknown = set(row) - _LEDGER_REQUIRED - _LEDGER_OPTIONAL
+    if unknown:
+        problems.append(f"{rid}: unknown field(s): {', '.join(sorted(unknown))}")
+
+    m = GEN_ID_RE.match(str(row.get("id", "")))
+    if not m or m.group(1) != project:
+        problems.append(f"{rid}: id must match '{project}-NNNN'")
+
+    outcome = row.get("outcome")
+    if outcome not in OUTCOMES:
+        problems.append(f"{rid}: outcome must be one of {sorted(OUTCOMES)}, got {outcome!r}")
+
+    tags = row.get("shot_tags")
+    if not isinstance(tags, list):
+        problems.append(f"{rid}: shot_tags must be a list")
+    else:
+        bad = [t for t in tags if t not in SHOT_TAGS]
+        if bad:
+            problems.append(f"{rid}: shot_tags not in vocabulary: {', '.join(bad)} "
+                            f"(allowed: {', '.join(sorted(SHOT_TAGS))})")
+        lo = 0 if outcome == "flagged" else 1
+        if not lo <= len(tags) <= 3:
+            problems.append(f"{rid}: shot_tags needs {lo}..3 entries, got {len(tags)}")
+
+    model = row.get("model")
+    if model_ids:
+        if model not in model_ids:
+            problems.append(f"{rid}: model {model!r} not in specs/model-specs.json")
+        elif model_ids[model] != model:
+            problems.append(f"{rid}: model {model!r} is an alias — store the "
+                            f"canonical id {model_ids[model]!r}")
+
+    if outcome == "rejected":
+        reason = row.get("reject_reason")
+        if reason not in REJECT_REASONS:
+            problems.append(f"{rid}: rejected rows need reject_reason from "
+                            f"{', '.join(sorted(REJECT_REASONS))}; got {reason!r}")
+    elif row.get("reject_reason") is not None and outcome in OUTCOMES:
+        problems.append(f"{rid}: reject_reason only belongs on rejected rows")
+
+    if not isinstance(row.get("draft_tier"), bool):
+        problems.append(f"{rid}: draft_tier must be true/false")
+
+    sup = row.get("supersedes")
+    if sup is not None:
+        if sup not in prior_ids:
+            problems.append(f"{rid}: supersedes {sup!r} — no earlier row with that "
+                            "id in this ledger (corrections point backward, same file)")
+        elif sup in superseded_ids:
+            problems.append(f"{rid}: supersedes {sup!r} which is already superseded — "
+                            "amend the latest amendment instead")
+    return problems
+
+
+def resolve_effective(rows: list) -> list:
+    """Append-only resolution: a row referenced by any supersedes is masked."""
+    masked = {r.get("supersedes") for r in rows if r.get("supersedes")}
+    return [r for r in rows if r.get("id") not in masked]
+
+
+def project_ledger_files() -> list:
+    """All real project ledgers. Underscore-prefixed names are reserved
+    (_global generated view, _demo test fixture) and excluded."""
+    if not LEDGER_DIR.is_dir():
+        return []
+    return sorted(p for p in LEDGER_DIR.glob("*.json")
+                  if not p.name.startswith("_"))
+
+
+def build_global() -> dict:
+    """The _global.json view: raw rows from every project ledger, each
+    annotated with its project. Generated, never hand-written; consumers
+    re-run supersedes resolution (ids are project-prefixed, so masks
+    cannot cross projects). Deterministic: filename order, then file order."""
+    rows = []
+    sources = []
+    for path in project_ledger_files():
+        db = load_ledger(path)
+        sources.append(path.name)
+        for r in db["rows"]:
+            rows.append({**r, "project": db["project"]})
+    return {
+        "_generated": "by higgsfield_memory.py — DO NOT HAND-EDIT; "
+                      "underscore-prefixed ledgers are excluded by design",
+        "generated_from": sources,
+        "_total_rows": len(rows),
+        "rows": rows,
+    }
+
+
+def write_global():
+    fresh = build_global()
+    LEDGER_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = GLOBAL_LEDGER.with_suffix(".tmp")
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(fresh, f, indent=2, ensure_ascii=False)
+        tmp.replace(GLOBAL_LEDGER)
+    except OSError as e:
+        tmp.unlink(missing_ok=True)
+        print(json.dumps({"status": "error", "message": f"Failed to write _global: {e}"}))
+        sys.exit(1)
+
+
+def _is_structural(row: dict) -> bool:
+    """Per-row boolean (a flagged lint-bridge row counts once, never twice):
+    structural = filter-flagged outcome OR a structural reject_reason."""
+    return (row.get("outcome") == "flagged"
+            or row.get("reject_reason") in STRUCTURAL_REASONS)
+
+
+def _is_stochastic(row: dict) -> bool:
+    return (row.get("outcome") == "rejected"
+            and row.get("reject_reason") in STOCHASTIC_REASONS)
+
+
+def compute_ratio(rows: list, model: str = None, tag: str = None) -> dict:
+    """Takes-per-kept statistics over a ledger's rows (pure function).
+
+    Operates on effective (supersedes-resolved) rows. draft_tier rows are
+    excluded from the headline and groups and reported as one draft-burn
+    line. Per-tag groups OVERLAP (a 2-tag row counts in both groups), so
+    the headline n is the effective non-draft ROW count, never the group
+    sum. All ratios are exact fractions here; round at display only."""
+    eff = resolve_effective(rows)
+    if model:
+        eff = [r for r in eff if r.get("model") == model]
+    if tag:
+        eff = [r for r in eff if tag in r.get("shot_tags", [])]
+    final = [r for r in eff if not r.get("draft_tier")]
+    drafts = [r for r in eff if r.get("draft_tier")]
+
+    groups = {}
+    for r in final:
+        for t in r.get("shot_tags", []):
+            groups.setdefault(t, []).append(r)
+
+    out = []
+    for t, members in sorted(groups.items(), key=lambda kv: (-len(kv[1]), kv[0])):
+        n = len(members)
+        kept = sum(1 for r in members if r.get("outcome") == "kept")
+        credited = [r for r in members
+                    if isinstance(r.get("credits"), (int, float))]
+        credited_kept = sum(1 for r in credited if r.get("outcome") == "kept")
+        out.append({
+            "tag": t,
+            "n": n,
+            "kept": kept,
+            "takes_per_kept": (n / kept) if kept else None,
+            "structural_frac": sum(1 for r in members if _is_structural(r)) / n,
+            "stochastic_frac": sum(1 for r in members if _is_stochastic(r)) / n,
+            "low_n": n < LOW_N_THRESHOLD,
+            # Subpopulation-consistent money view: numerator AND denominator
+            # come from credit-logged rows only, so a missing credits field
+            # can't bias the figure low.
+            "credits_per_kept": (sum(r["credits"] for r in credited) / credited_kept
+                                 if credited_kept else None),
+            "credits_coverage": (len(credited), n),
+        })
+    return {
+        "n": len(final),
+        "groups": out,
+        "untagged": sum(1 for r in final if not r.get("shot_tags")),
+        "draft": {
+            "n": len(drafts),
+            "kept": sum(1 for r in drafts if r.get("outcome") == "kept"),
+            "credits": sum(r.get("credits", 0) for r in drafts
+                           if isinstance(r.get("credits"), (int, float))),
+        },
+    }
+
+
+_CONFIDENCE_RANK = {"project-data": 0, "global-data": 1, "default": 2}
+
+
+def compute_budget(shots: list, project_rows: list, global_rows: list) -> dict:
+    """Price a shot manifest from logged ratios (pure function).
+
+    Per shot {shot_tags: [1..3], model?}: each tag resolves to the project
+    tag group (only when n>=LOW_N_THRESHOLD and kept>0), else the global
+    group (same bar), else DEFAULT_RATIOS (defaults, not data). Expected
+    takes = MAX over the shot's tags (conservative); the shot's confidence
+    label is the source of the WINNING tag (ties prefer the weaker label).
+    Ratios are model-agnostic in v1; only the credit average is per-model
+    (credited, non-draft, effective rows; project first, global fallback).
+    Shots without a usable credit average are excluded from the money total
+    and reported via coverage."""
+    proj = {g["tag"]: g for g in compute_ratio(project_rows)["groups"]}
+    glob = {g["tag"]: g for g in compute_ratio(global_rows)["groups"]}
+
+    def tag_ratio(t: str):
+        if t not in SHOT_TAGS:
+            raise LedgerError(f"shot tag {t!r} not in vocabulary "
+                              f"(allowed: {', '.join(sorted(SHOT_TAGS))})")
+        for source, table in (("project-data", proj), ("global-data", glob)):
+            g = table.get(t)
+            if g and g["n"] >= LOW_N_THRESHOLD and g["kept"] > 0:
+                return g["takes_per_kept"], source
+        return DEFAULT_RATIOS[t], "default"
+
+    def credit_avg(model_id: str):
+        for rows in (project_rows, global_rows):
+            credited = [r for r in resolve_effective(rows)
+                        if r.get("model") == model_id
+                        and not r.get("draft_tier")
+                        and isinstance(r.get("credits"), (int, float))]
+            if credited:
+                return sum(r["credits"] for r in credited) / len(credited)
+        return None
+
+    shots_out = []
+    for i, shot in enumerate(shots):
+        tags = shot.get("shot_tags") or []
+        if not 1 <= len(tags) <= 3:
+            raise LedgerError(f"shot {i + 1}: needs 1..3 shot_tags, got {len(tags)}")
+        candidates = [(takes, src, t) for t in tags
+                      for takes, src in [tag_ratio(t)]]
+        # MAX takes wins; on a tie prefer the weaker (less data-backed) label.
+        takes, source, won_tag = max(
+            candidates, key=lambda c: (c[0], _CONFIDENCE_RANK[c[1]]))
+        avg = credit_avg(shot["model"]) if shot.get("model") else None
+        shots_out.append({
+            "shot": shot.get("shot") or f"#{i + 1}",
+            "tags": tags,
+            "model": shot.get("model"),
+            "expected_takes": takes,
+            "source": source,
+            "winning_tag": won_tag,
+            "credit_avg": avg,
+            "expected_credits": (avg * takes) if avg is not None else None,
+        })
+
+    costed = [s for s in shots_out if s["expected_credits"] is not None]
+    return {
+        "shots": shots_out,
+        "total_takes": sum(s["expected_takes"] for s in shots_out),
+        "total_credits": (sum(s["expected_credits"] for s in costed)
+                          if costed else None),
+        "credit_coverage": (len(costed), len(shots_out)),
+        "confidence": max((s["source"] for s in shots_out),
+                          key=lambda s: _CONFIDENCE_RANK[s],
+                          default="default"),
+        "defaults_used": any(s["source"] == "default" for s in shots_out),
+    }
+
+
+class LedgerError(ValueError):
+    """Raised on invalid ledger writes. The CLI maps it to a JSON error +
+    exit 1; in-process callers (the seedance_lint bridge) catch it so a
+    logging hiccup can never block a lint run."""
+
+
+def log_gen_row(project: str, fields: dict) -> dict:
+    """The single write path for ledger rows: fill id/ts, canonicalize the
+    model id, schema-validate, append, regenerate _global. Raises
+    LedgerError with the full problem list on invalid input — failing fast
+    with the vocabulary printed is what keeps logging at one retry max."""
+    model_ids = load_specs_models()
+    if not model_ids:
+        raise LedgerError("specs/model-specs.json missing or unreadable — "
+                          "the ledger validates model ids against the specs "
+                          "layer (run: python3 sync_specs.py)")
+    path = ledger_path(project)
+    db = load_ledger(path)
+
+    row = {k: v for k, v in fields.items() if v is not None}
+    row.setdefault("id", next_gen_id(project, db["rows"]))
+    row.setdefault("ts", now_iso())
+    row.setdefault("shot_tags", [])
+    row.setdefault("draft_tier", False)
+    if row.get("model") in model_ids:
+        row["model"] = model_ids[row["model"]]  # alias → canonical
+
+    prior_ids = {r.get("id") for r in db["rows"]}
+    superseded = {r.get("supersedes") for r in db["rows"] if r.get("supersedes")}
+    if row["id"] in prior_ids:
+        raise LedgerError(f"duplicate id {row['id']}")
+    problems = validate_ledger_row(row, project, prior_ids, superseded, model_ids)
+    if problems:
+        raise LedgerError("; ".join(problems))
+
+    db["rows"].append(row)
+    save_ledger(path, db)
+    write_global()
+    return row
+
+
+def _parse_log_gen_args(argv: list):
+    import argparse
+    p = argparse.ArgumentParser(
+        prog="higgsfield_memory.py log-gen",
+        description="Log one generation attempt to a project ledger "
+                    "(one line — see db/ledger/README.md).")
+    p.add_argument("project")
+    p.add_argument("json_row", nargs="?",
+                   help="raw JSON row (alternative to the flags below)")
+    p.add_argument("--model", help="specs model id or alias")
+    p.add_argument("--tags", help="comma-separated shot tags (controlled vocab)")
+    p.add_argument("--outcome", choices=sorted(OUTCOMES))
+    p.add_argument("--reason", help="reject_reason (required when rejected)")
+    p.add_argument("--mode")
+    p.add_argument("--resolution")
+    p.add_argument("--aspect")
+    p.add_argument("--duration", type=int, help="duration_s")
+    p.add_argument("--cuts", type=int, help="internal_cuts")
+    p.add_argument("--scene", help="scene_ref")
+    p.add_argument("--draft", action="store_true", help="mark as draft-tier roll")
+    p.add_argument("--credits", type=int)
+    p.add_argument("--notes")
+    p.add_argument("--prompt", help="prompt text — stored only as sha1[:12] prompt_hash")
+    return p.parse_args(argv)
+
+
+def cmd_log_gen(argv: list):
+    args = _parse_log_gen_args(argv)
+    if args.json_row:
+        try:
+            fields = json.loads(args.json_row)
+        except json.JSONDecodeError as e:
+            print(json.dumps({"status": "error", "message": f"Invalid JSON: {e}"}))
+            sys.exit(1)
+    else:
+        import hashlib
+        fields = {
+            "model": args.model,
+            "shot_tags": [t.strip() for t in args.tags.split(",")] if args.tags else None,
+            "outcome": args.outcome,
+            "reject_reason": args.reason,
+            "mode": args.mode,
+            "resolution": args.resolution,
+            "aspect": args.aspect,
+            "duration_s": args.duration,
+            "internal_cuts": args.cuts,
+            "scene_ref": args.scene,
+            "draft_tier": True if args.draft else None,
+            "credits": args.credits,
+            "notes": args.notes,
+            "prompt_hash": (hashlib.sha1(args.prompt.strip().encode("utf-8"))
+                            .hexdigest()[:12] if args.prompt else None),
+        }
+    try:
+        row = log_gen_row(args.project, fields)
+    except LedgerError as e:
+        print(json.dumps({"status": "error", "message": str(e)}))
+        sys.exit(1)
+    print(json.dumps({"status": "ok", "id": row["id"], "outcome": row["outcome"],
+                      "project": args.project}))
+
+
+def render_ratio(label: str, result: dict, credits_mode: bool = False) -> str:
+    lines = [f"{label.upper()} — generation ratios (final-tier only, n={result['n']})"]
+    if not result["groups"]:
+        lines.append("  (no final-tier rows yet — log generations with log-gen)")
+    else:
+        header = f"{'shot_tag':<18} {'n':<4} {'kept':<5} {'takes/kept':<11} {'structural%':<12} {'stochastic%':<12}"
+        if credits_mode:
+            header += f" {'credits/kept':<14} coverage"
+        lines.append(header)
+        for g in result["groups"]:
+            takes = f"{round(g['takes_per_kept'], 1)}" if g["takes_per_kept"] else "—"
+            struct = f"{round(100 * g['structural_frac'])}%"
+            stoch = f"{round(100 * g['stochastic_frac'])}%"
+            row = (f"{g['tag']:<18} {g['n']:<4} {g['kept']:<5} {takes:<11} "
+                   f"{struct:<12} {stoch:<12}")
+            if credits_mode:
+                cpk = (f"{round(g['credits_per_kept'])}"
+                       if g["credits_per_kept"] is not None else "—")
+                k, n = g["credits_coverage"]
+                row += f" {cpk:<14} (credits on {k}/{n} rows)"
+            if g["low_n"]:
+                row += "  low-n"
+            lines.append(row)
+    if result["untagged"]:
+        lines.append(f"  ({result['untagged']} untagged flagged row(s) count in "
+                     "n but in no group)")
+    d = result["draft"]
+    if d["n"]:
+        burn = f"Draft burn: {d['n']} draft-tier row(s), {d['kept']} kept (excluded from the table)"
+        if credits_mode and d["credits"]:
+            burn += f" — {d['credits']} credits"
+        lines.append(burn)
+    lines.append('Confidence: rows with n < '
+                 f'{LOW_N_THRESHOLD} marked "low-n" — do not budget from them.')
+    return "\n".join(lines)
+
+
+def cmd_ratio(argv: list):
+    import argparse
+    p = argparse.ArgumentParser(
+        prog="higgsfield_memory.py ratio",
+        description="Takes-per-kept ratio table from the generation ledger.")
+    p.add_argument("project", nargs="?",
+                   help="project ledger (omit with --global)")
+    p.add_argument("--model", help="filter to one canonical model id")
+    p.add_argument("--tag", help="filter to rows carrying one shot tag")
+    p.add_argument("--global", dest="global_view", action="store_true",
+                   help="aggregate across all (non-underscore) projects")
+    p.add_argument("--credits", action="store_true",
+                   help="add the credits-per-kept money view")
+    args = p.parse_args(argv)
+
+    if args.global_view:
+        rows = load_ledger(GLOBAL_LEDGER)["rows"]
+        label = "global"
+    elif args.project:
+        # Reads may target reserved (underscore) ledgers like _demo;
+        # only WRITES are blocked from them.
+        if re.fullmatch(r"_?[A-Za-z0-9][A-Za-z0-9_-]*", args.project):
+            path = LEDGER_DIR / f"{args.project}.json"
+        else:
+            path = ledger_path(args.project)  # reuses the error contract
+        rows = load_ledger(path)["rows"]
+        label = args.project
+    else:
+        p.error("need a project name or --global")
+    result = compute_ratio(rows, model=args.model, tag=args.tag)
+    print(render_ratio(label, result, credits_mode=args.credits))
+
+
+def _load_shot_manifest(path: Path) -> list:
+    """Shot manifest: JSON list of {shot?, shot_tags, model?} or CSV with
+    columns shot / shot_tags / model (tags separated by ; or , in the cell)."""
+    text = path.read_text(encoding="utf-8")
+    if path.suffix.lower() == ".json":
+        shots = json.loads(text)
+        if not isinstance(shots, list):
+            raise LedgerError("JSON manifest must be a list of shot objects")
+        return shots
+    import csv
+    import io
+    shots = []
+    for rec in csv.DictReader(io.StringIO(text)):
+        tags = re.split(r"[;,]", rec.get("shot_tags") or "")
+        shots.append({
+            "shot": (rec.get("shot") or "").strip() or None,
+            "shot_tags": [t.strip() for t in tags if t.strip()],
+            "model": (rec.get("model") or "").strip() or None,
+        })
+    return shots
+
+
+def render_budget(label: str, result: dict) -> str:
+    lines = [f"{label.upper()} — budget estimate ({len(result['shots'])} planned shot(s))",
+             f"{'shot':<8} {'tags':<34} {'takes':<7} source"]
+    for s in result["shots"]:
+        src = s["source"] + (" (defaults, not data)" if s["source"] == "default" else "")
+        lines.append(f"{s['shot']:<8} {'+'.join(s['tags']):<34} "
+                     f"{round(s['expected_takes'], 1):<7} {src}")
+    lines.append("")
+    lines.append(f"Expected generations: {round(result['total_takes'], 1)}")
+    covered, total = result["credit_coverage"]
+    if result["total_credits"] is not None:
+        lines.append(f"Credit estimate: {round(result['total_credits'])} "
+                     f"(credit data on {covered}/{total} shots)")
+    else:
+        lines.append("Credit estimate: — (no logged credit data for these models)")
+    lines.append(f"Confidence: {result['confidence']}")
+    if result["defaults_used"]:
+        lines.append("⚠ DEFAULT planning ratios used for some shots — these are the "
+                     "documented defaults (2–3:1 simple, 4–6:1 complex), NOT logged "
+                     "data. Log generations to replace them with real numbers.")
+    return "\n".join(lines)
+
+
+def cmd_budget(argv: list):
+    import argparse
+    p = argparse.ArgumentParser(
+        prog="higgsfield_memory.py budget",
+        description="Price a shot manifest from logged generation ratios.")
+    p.add_argument("project")
+    p.add_argument("--shots", required=True, type=Path,
+                   help="manifest file: JSON list or CSV (shot, shot_tags, model)")
+    args = p.parse_args(argv)
+
+    if re.fullmatch(r"_?[A-Za-z0-9][A-Za-z0-9_-]*", args.project):
+        path = LEDGER_DIR / f"{args.project}.json"
+    else:
+        path = ledger_path(args.project)
+    project_rows = load_ledger(path)["rows"]
+    global_rows = load_ledger(GLOBAL_LEDGER)["rows"]
+    try:
+        shots = _load_shot_manifest(args.shots)
+        result = compute_budget(shots, project_rows, global_rows)
+    except (OSError, json.JSONDecodeError, LedgerError) as e:
+        print(json.dumps({"status": "error", "message": str(e)}))
+        sys.exit(1)
+    print(render_budget(args.project, result))
+
+
+def cmd_last_gen(project: str):
+    db = load_ledger(ledger_path(project))
+    effective = resolve_effective(db["rows"])
+    if not effective:
+        print(json.dumps({"status": "empty", "project": project}))
+        return
+    print(json.dumps(effective[-1], indent=2, ensure_ascii=False))
+
+
+def cmd_amend_gen(argv: list):
+    """amend-gen <id> field=value [...] — writes a SUPERSEDING row (full
+    clone of the original with overrides); history is never edited."""
+    if len(argv) < 2 or "=" not in argv[1]:
+        print(json.dumps({"status": "error",
+                          "message": "usage: amend-gen <id> field=value [field=value ...]"}))
+        sys.exit(1)
+    gen_id = argv[0]
+    m = GEN_ID_RE.match(gen_id)
+    if not m:
+        print(json.dumps({"status": "error", "message": f"Bad id: {gen_id!r}"}))
+        sys.exit(1)
+    project = m.group(1)
+    db = load_ledger(ledger_path(project))
+    original = next((r for r in db["rows"] if r.get("id") == gen_id), None)
+    if original is None:
+        print(json.dumps({"status": "error", "message": f"{gen_id} not found"}))
+        sys.exit(1)
+    superseded = {r.get("supersedes") for r in db["rows"] if r.get("supersedes")}
+    if gen_id in superseded:
+        latest = next(r["id"] for r in reversed(db["rows"])
+                      if r.get("supersedes") == gen_id)
+        print(json.dumps({"status": "error",
+                          "message": f"{gen_id} is already superseded — amend the "
+                                     f"latest amendment ({latest}) instead"}))
+        sys.exit(1)
+
+    clone = {k: v for k, v in original.items()
+             if k not in ("id", "ts", "supersedes")}
+    for pair in argv[1:]:
+        key, _, value = pair.partition("=")
+        if key == "shot_tags" or key == "tags":
+            clone["shot_tags"] = [t.strip() for t in value.split(",") if t.strip()]
+        elif value.lower() in ("true", "false"):
+            clone[key] = value.lower() == "true"
+        elif value.lower() in ("null", "none", ""):
+            clone.pop(key, None)
+        else:
+            try:
+                clone[key] = int(value)
+            except ValueError:
+                clone[key] = value
+    # An outcome flip away from 'rejected' drops the now-invalid reason
+    # unless the amendment explicitly set one.
+    if clone.get("outcome") != "rejected":
+        amended_keys = {p.partition("=")[0] for p in argv[1:]}
+        if "reject_reason" not in amended_keys:
+            clone.pop("reject_reason", None)
+    clone["supersedes"] = gen_id
+    try:
+        row = log_gen_row(project, clone)
+    except LedgerError as e:
+        print(json.dumps({"status": "error", "message": str(e)}))
+        sys.exit(1)
+    print(json.dumps({"status": "ok", "id": row["id"], "supersedes": gen_id,
+                      "outcome": row.get("outcome")}))
 
 # ── Commands ───────────────────────────────────────────────────────────────────
 
@@ -343,6 +1045,19 @@ def build_summary() -> str:
         lines.append(f"- **Outcome:** {e.get('outcome', 'unknown')}")
         lines.append(f"- **Notes:** {e.get('notes', '')}")
 
+    # Generation ledger — current ratios at a glance (real projects only;
+    # underscore-prefixed ledgers are reserved/fixture data).
+    lines.append("\n---\n\n## Generation Ledger\n")
+    projects = project_ledger_files()
+    if not projects:
+        lines.append("No project ledgers yet — log generations with "
+                     "`higgsfield_memory.py log-gen <project> ...`.")
+    for path in projects:
+        db = load_ledger(path)
+        lines.append("\n```")
+        lines.append(render_ratio(db["project"], compute_ratio(db["rows"])))
+        lines.append("```")
+
     return "\n".join(lines)
 
 
@@ -456,6 +1171,16 @@ if __name__ == "__main__":
         improved = sys.argv[4] if len(sys.argv) >= 5 else ""
         notes = sys.argv[5] if len(sys.argv) >= 6 else ""
         update_quality(sys.argv[2], sys.argv[3], improved, notes)
+    elif cmd == "log-gen" and len(sys.argv) >= 3:
+        cmd_log_gen(sys.argv[2:])
+    elif cmd == "ratio":
+        cmd_ratio(sys.argv[2:])
+    elif cmd == "budget":
+        cmd_budget(sys.argv[2:])
+    elif cmd == "last-gen" and len(sys.argv) >= 3:
+        cmd_last_gen(sys.argv[2])
+    elif cmd == "amend-gen" and len(sys.argv) >= 3:
+        cmd_amend_gen(sys.argv[2:])
     elif cmd == "stats":
         stats()
     elif cmd == "export-summary":
