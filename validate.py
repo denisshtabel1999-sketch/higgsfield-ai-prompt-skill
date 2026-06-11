@@ -481,6 +481,29 @@ def check_model_specs():
             check(ok, label, detail)
 
 
+def check_description_coverage():
+    """Every skills/<dir>/ has a SUB_SKILL_DESCRIPTIONS entry and vice versa.
+
+    generate_user_guide.py enforces the same parity, but only where fpdf2 is
+    installed — which is exactly where new-sub-skill PRs usually aren't built.
+    This stdlib copy of the gate runs everywhere."""
+    try:
+        from sub_skill_descriptions import SUB_SKILL_DESCRIPTIONS
+    except ImportError as e:
+        check(False, "sub_skill_descriptions.py imports", str(e))
+        return
+    skills_dir = ROOT / "skills"
+    on_disk = {d.name for d in skills_dir.iterdir()
+               if d.is_dir() and d.name != "shared" and (d / "SKILL.md").exists()}
+    described = set(SUB_SKILL_DESCRIPTIONS)
+    missing = sorted(on_disk - described)
+    orphans = sorted(described - on_disk)
+    check(not missing, "every sub-skill has a description entry",
+          "" if not missing else f"add to sub_skill_descriptions.py: {', '.join(missing)}")
+    check(not orphans, "no orphan description entries",
+          "" if not orphans else f"no skills/ dir for: {', '.join(orphans)}")
+
+
 def check_repo_hygiene():
     """Fail if generated artifacts are tracked in git.
 
@@ -550,6 +573,7 @@ def main():
     # ── 4b. Dispatcher ↔ disk sub-skill parity ──────────────────────────────
     print("\n[ DISPATCHER / SKILL PARITY ]")
     check_dispatcher_parity()
+    check_description_coverage()
 
     # ── 4c. Model specs layer ───────────────────────────────────────────────
     print("\n[ MODEL SPECS ]")
