@@ -342,7 +342,33 @@ def parse_args():
     parser.add_argument("--strict", action="store_true",
                         help="Release mode: optional-dependency SKIPs become "
                              "failures (use for release builds / CI).")
+    parser.add_argument("--evals", action="store_true",
+                        help="Also run the golden-case eval harness "
+                             "(evals/run_evals.py). Opt-in so corpus growth "
+                             "doesn't slow the default health check.")
     return parser.parse_args()
+
+
+def check_evals():
+    """Run evals/run_evals.py as a subprocess (same isolation rationale as the
+    PDF smoke: a crashing eval case must not take this report down)."""
+    runner = ROOT / "evals" / "run_evals.py"
+    if not check(runner.exists(), "evals/run_evals.py exists"):
+        return
+    try:
+        result = subprocess.run([sys.executable, str(runner)],
+                                capture_output=True, text=True, timeout=120)
+    except subprocess.TimeoutExpired:
+        check(False, "eval harness", "timeout after 120s")
+        return
+    tail = (result.stdout or "").strip().splitlines()
+    summary = tail[-1] if tail else "(no output)"
+    if result.returncode == 0:
+        check(True, "eval harness", summary)
+    else:
+        failing = [l.strip() for l in tail if l.strip().startswith("✗")]
+        check(False, "eval harness",
+              summary + ("; " + "; ".join(failing[:3]) if failing else ""))
 
 
 def _norm_model_name(s: str) -> str:
@@ -680,6 +706,11 @@ def main():
                 "generate_user_guide.py --dry-run",
                 f"exit {result.returncode}; stderr: {stderr_excerpt[:150]}",
             )
+
+    # ── 6. Eval harness (opt-in) ────────────────────────────────────────────
+    if args.evals:
+        print("\n[ EVALS ]")
+        check_evals()
 
     # ── Summary ─────────────────────────────────────────────────────────────
     print(f"\n{'='*50}")
