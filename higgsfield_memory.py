@@ -387,6 +387,148 @@ def write_global():
         sys.exit(1)
 
 
+def _is_structural(row: dict) -> bool:
+    """Per-row boolean (a flagged lint-bridge row counts once, never twice):
+    structural = filter-flagged outcome OR a structural reject_reason."""
+    return (row.get("outcome") == "flagged"
+            or row.get("reject_reason") in STRUCTURAL_REASONS)
+
+
+def _is_stochastic(row: dict) -> bool:
+    return (row.get("outcome") == "rejected"
+            and row.get("reject_reason") in STOCHASTIC_REASONS)
+
+
+def compute_ratio(rows: list, model: str = None, tag: str = None) -> dict:
+    """Takes-per-kept statistics over a ledger's rows (pure function).
+
+    Operates on effective (supersedes-resolved) rows. draft_tier rows are
+    excluded from the headline and groups and reported as one draft-burn
+    line. Per-tag groups OVERLAP (a 2-tag row counts in both groups), so
+    the headline n is the effective non-draft ROW count, never the group
+    sum. All ratios are exact fractions here; round at display only."""
+    eff = resolve_effective(rows)
+    if model:
+        eff = [r for r in eff if r.get("model") == model]
+    if tag:
+        eff = [r for r in eff if tag in r.get("shot_tags", [])]
+    final = [r for r in eff if not r.get("draft_tier")]
+    drafts = [r for r in eff if r.get("draft_tier")]
+
+    groups = {}
+    for r in final:
+        for t in r.get("shot_tags", []):
+            groups.setdefault(t, []).append(r)
+
+    out = []
+    for t, members in sorted(groups.items(), key=lambda kv: (-len(kv[1]), kv[0])):
+        n = len(members)
+        kept = sum(1 for r in members if r.get("outcome") == "kept")
+        credited = [r for r in members
+                    if isinstance(r.get("credits"), (int, float))]
+        credited_kept = sum(1 for r in credited if r.get("outcome") == "kept")
+        out.append({
+            "tag": t,
+            "n": n,
+            "kept": kept,
+            "takes_per_kept": (n / kept) if kept else None,
+            "structural_frac": sum(1 for r in members if _is_structural(r)) / n,
+            "stochastic_frac": sum(1 for r in members if _is_stochastic(r)) / n,
+            "low_n": n < LOW_N_THRESHOLD,
+            # Subpopulation-consistent money view: numerator AND denominator
+            # come from credit-logged rows only, so a missing credits field
+            # can't bias the figure low.
+            "credits_per_kept": (sum(r["credits"] for r in credited) / credited_kept
+                                 if credited_kept else None),
+            "credits_coverage": (len(credited), n),
+        })
+    return {
+        "n": len(final),
+        "groups": out,
+        "untagged": sum(1 for r in final if not r.get("shot_tags")),
+        "draft": {
+            "n": len(drafts),
+            "kept": sum(1 for r in drafts if r.get("outcome") == "kept"),
+            "credits": sum(r.get("credits", 0) for r in drafts
+                           if isinstance(r.get("credits"), (int, float))),
+        },
+    }
+
+
+_CONFIDENCE_RANK = {"project-data": 0, "global-data": 1, "default": 2}
+
+
+def compute_budget(shots: list, project_rows: list, global_rows: list) -> dict:
+    """Price a shot manifest from logged ratios (pure function).
+
+    Per shot {shot_tags: [1..3], model?}: each tag resolves to the project
+    tag group (only when n>=LOW_N_THRESHOLD and kept>0), else the global
+    group (same bar), else DEFAULT_RATIOS (defaults, not data). Expected
+    takes = MAX over the shot's tags (conservative); the shot's confidence
+    label is the source of the WINNING tag (ties prefer the weaker label).
+    Ratios are model-agnostic in v1; only the credit average is per-model
+    (credited, non-draft, effective rows; project first, global fallback).
+    Shots without a usable credit average are excluded from the money total
+    and reported via coverage."""
+    proj = {g["tag"]: g for g in compute_ratio(project_rows)["groups"]}
+    glob = {g["tag"]: g for g in compute_ratio(global_rows)["groups"]}
+
+    def tag_ratio(t: str):
+        if t not in SHOT_TAGS:
+            raise LedgerError(f"shot tag {t!r} not in vocabulary "
+                              f"(allowed: {', '.join(sorted(SHOT_TAGS))})")
+        for source, table in (("project-data", proj), ("global-data", glob)):
+            g = table.get(t)
+            if g and g["n"] >= LOW_N_THRESHOLD and g["kept"] > 0:
+                return g["takes_per_kept"], source
+        return DEFAULT_RATIOS[t], "default"
+
+    def credit_avg(model_id: str):
+        for rows in (project_rows, global_rows):
+            credited = [r for r in resolve_effective(rows)
+                        if r.get("model") == model_id
+                        and not r.get("draft_tier")
+                        and isinstance(r.get("credits"), (int, float))]
+            if credited:
+                return sum(r["credits"] for r in credited) / len(credited)
+        return None
+
+    shots_out = []
+    for i, shot in enumerate(shots):
+        tags = shot.get("shot_tags") or []
+        if not 1 <= len(tags) <= 3:
+            raise LedgerError(f"shot {i + 1}: needs 1..3 shot_tags, got {len(tags)}")
+        candidates = [(takes, src, t) for t in tags
+                      for takes, src in [tag_ratio(t)]]
+        # MAX takes wins; on a tie prefer the weaker (less data-backed) label.
+        takes, source, won_tag = max(
+            candidates, key=lambda c: (c[0], _CONFIDENCE_RANK[c[1]]))
+        avg = credit_avg(shot["model"]) if shot.get("model") else None
+        shots_out.append({
+            "shot": shot.get("shot") or f"#{i + 1}",
+            "tags": tags,
+            "model": shot.get("model"),
+            "expected_takes": takes,
+            "source": source,
+            "winning_tag": won_tag,
+            "credit_avg": avg,
+            "expected_credits": (avg * takes) if avg is not None else None,
+        })
+
+    costed = [s for s in shots_out if s["expected_credits"] is not None]
+    return {
+        "shots": shots_out,
+        "total_takes": sum(s["expected_takes"] for s in shots_out),
+        "total_credits": (sum(s["expected_credits"] for s in costed)
+                          if costed else None),
+        "credit_coverage": (len(costed), len(shots_out)),
+        "confidence": max((s["source"] for s in shots_out),
+                          key=lambda s: _CONFIDENCE_RANK[s],
+                          default="default"),
+        "defaults_used": any(s["source"] == "default" for s in shots_out),
+    }
+
+
 class LedgerError(ValueError):
     """Raised on invalid ledger writes. The CLI maps it to a JSON error +
     exit 1; in-process callers (the seedance_lint bridge) catch it so a
@@ -488,6 +630,76 @@ def cmd_log_gen(argv: list):
         sys.exit(1)
     print(json.dumps({"status": "ok", "id": row["id"], "outcome": row["outcome"],
                       "project": args.project}))
+
+
+def render_ratio(label: str, result: dict, credits_mode: bool = False) -> str:
+    lines = [f"{label.upper()} — generation ratios (final-tier only, n={result['n']})"]
+    if not result["groups"]:
+        lines.append("  (no final-tier rows yet — log generations with log-gen)")
+    else:
+        header = f"{'shot_tag':<18} {'n':<4} {'kept':<5} {'takes/kept':<11} {'structural%':<12} {'stochastic%':<12}"
+        if credits_mode:
+            header += f" {'credits/kept':<14} coverage"
+        lines.append(header)
+        for g in result["groups"]:
+            takes = f"{round(g['takes_per_kept'], 1)}" if g["takes_per_kept"] else "—"
+            struct = f"{round(100 * g['structural_frac'])}%"
+            stoch = f"{round(100 * g['stochastic_frac'])}%"
+            row = (f"{g['tag']:<18} {g['n']:<4} {g['kept']:<5} {takes:<11} "
+                   f"{struct:<12} {stoch:<12}")
+            if credits_mode:
+                cpk = (f"{round(g['credits_per_kept'])}"
+                       if g["credits_per_kept"] is not None else "—")
+                k, n = g["credits_coverage"]
+                row += f" {cpk:<14} (credits on {k}/{n} rows)"
+            if g["low_n"]:
+                row += "  low-n"
+            lines.append(row)
+    if result["untagged"]:
+        lines.append(f"  ({result['untagged']} untagged flagged row(s) count in "
+                     "n but in no group)")
+    d = result["draft"]
+    if d["n"]:
+        burn = f"Draft burn: {d['n']} draft-tier row(s), {d['kept']} kept (excluded from the table)"
+        if credits_mode and d["credits"]:
+            burn += f" — {d['credits']} credits"
+        lines.append(burn)
+    lines.append('Confidence: rows with n < '
+                 f'{LOW_N_THRESHOLD} marked "low-n" — do not budget from them.')
+    return "\n".join(lines)
+
+
+def cmd_ratio(argv: list):
+    import argparse
+    p = argparse.ArgumentParser(
+        prog="higgsfield_memory.py ratio",
+        description="Takes-per-kept ratio table from the generation ledger.")
+    p.add_argument("project", nargs="?",
+                   help="project ledger (omit with --global)")
+    p.add_argument("--model", help="filter to one canonical model id")
+    p.add_argument("--tag", help="filter to rows carrying one shot tag")
+    p.add_argument("--global", dest="global_view", action="store_true",
+                   help="aggregate across all (non-underscore) projects")
+    p.add_argument("--credits", action="store_true",
+                   help="add the credits-per-kept money view")
+    args = p.parse_args(argv)
+
+    if args.global_view:
+        rows = load_ledger(GLOBAL_LEDGER)["rows"]
+        label = "global"
+    elif args.project:
+        # Reads may target reserved (underscore) ledgers like _demo;
+        # only WRITES are blocked from them.
+        if re.fullmatch(r"_?[A-Za-z0-9][A-Za-z0-9_-]*", args.project):
+            path = LEDGER_DIR / f"{args.project}.json"
+        else:
+            path = ledger_path(args.project)  # reuses the error contract
+        rows = load_ledger(path)["rows"]
+        label = args.project
+    else:
+        p.error("need a project name or --global")
+    result = compute_ratio(rows, model=args.model, tag=args.tag)
+    print(render_ratio(label, result, credits_mode=args.credits))
 
 
 def cmd_last_gen(project: str):
@@ -876,6 +1088,8 @@ if __name__ == "__main__":
         update_quality(sys.argv[2], sys.argv[3], improved, notes)
     elif cmd == "log-gen" and len(sys.argv) >= 3:
         cmd_log_gen(sys.argv[2:])
+    elif cmd == "ratio":
+        cmd_ratio(sys.argv[2:])
     elif cmd == "last-gen" and len(sys.argv) >= 3:
         cmd_last_gen(sys.argv[2])
     elif cmd == "amend-gen" and len(sys.argv) >= 3:
