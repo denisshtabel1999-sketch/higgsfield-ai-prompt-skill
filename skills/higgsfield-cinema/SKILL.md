@@ -1801,7 +1801,7 @@ The image-mode model picker has two groups: **Cinematic models** (studio-native 
 
 **Soul Cinema is shared between Cinema Studio 3.0 and 3.5 image modes** — see § Cinema Studio 3.0 (Business/Team Plan) above for the 3.0-side acknowledgment. Per-model selection guidance (when to pick which Cinematic model) is documented below in § Per-Cinematic-model selection guide. Sample prompts specific to each Cinematic model are deferred to a future release.
 
-**Featured models — picker overview:** The image-mode picker also surfaces **Featured models** (e.g., Higgsfield Soul 2.0, GPT Image 2, Seedream 5.0 Lite, plus other third-party engines listed in `MODELS-DEEP-REFERENCE.md`). Featured models are selectable from inside the Cinema Studio shell, but selecting one means the **studio-specific UI features (Style Settings, Camera Settings panels) are not available** — the shell remains, but creative control reverts to prompt-only. For Featured-model prompting, route to the model's own documentation in `MODELS-DEEP-REFERENCE.md` rather than treating it as a Cinema Studio configuration problem.
+**Featured models — picker overview:** The image-mode picker also surfaces **Featured models** (e.g., Higgsfield Soul 2.0, GPT Image 2, Seedream 5.0 Lite, plus other third-party engines listed in `../higgsfield-models/MODELS-DEEP-REFERENCE.md`). Featured models are selectable from inside the Cinema Studio shell, but selecting one means the **studio-specific UI features (Style Settings, Camera Settings panels) are not available** — the shell remains, but creative control reverts to prompt-only. For Featured-model prompting, route to the model's own documentation in `../higgsfield-models/MODELS-DEEP-REFERENCE.md` rather than treating it as a Cinema Studio configuration problem.
 
 > ⚠ Note: the Featured list also contains a separately-named model called **Higgsfield Soul Cinema**, which is distinct from the Cinematic-list **Soul Cinema** despite the similar names. The two are not interchangeable.
 
@@ -1868,7 +1868,7 @@ The picker also exposes a **+ Save setup** button — a configured Camera Body +
 - **Soul Cinema identity prompting** — `../higgsfield-soul/SKILL.md`
 - **2.5 camera vocabulary** — § Optical Physics Engine earlier in this file (the same vocabulary that Cinematic Cameras uses)
 - **Five-View Location Sheet workflow** — § Location Reference Sheets earlier in this file (image-mode work pairs naturally with location-sheet generation)
-- **Featured-model documentation** — `MODELS-DEEP-REFERENCE.md` (per-engine specs for the third-party models surfaced in the picker)
+- **Featured-model documentation** — `../higgsfield-models/MODELS-DEEP-REFERENCE.md` (per-engine specs for the third-party models surfaced in the picker)
 
 ### AI Director Toggle
 

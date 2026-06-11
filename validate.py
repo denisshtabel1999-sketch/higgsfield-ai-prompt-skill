@@ -45,6 +45,40 @@ ROOT_REFERENCE_DOCS = {
     "vocab.md", "model-guide.md", "image-models.md", "prompt-examples.md",
     "photodump-presets.md", "production-benchmarks.md", "DISCIPLINE.md",
 }
+# Bare backticked filenames that are PROSE CITATIONS of files living outside
+# this repo (source corpus, sibling team skills). They intentionally do not
+# resolve here and must not be flagged. Keep this list short and reviewed —
+# anything else that fails to resolve repo-wide gets a WARN.
+EXTERNAL_CITATIONS = {
+    "gpt-image-2-director.md", "seedance-2-pro-director.md",
+    "shotlist-builder.md", "banana-pro-director.md",
+    "cinema-worldbuilder.md", "screenwriter-skill.md",
+    # Adil Aliyev source-corpus siblings cited as translation provenance
+    # (note: `higgsfield-content-factory.md` cites the EXTERNAL source skill,
+    # not this repo's skills/higgsfield-content-factory/SKILL.md):
+    "marketing-studio-director.md", "higgsfield-content-factory.md",
+    "cinematic-motion-language.md",
+}
+
+_repo_filename_index: set | None = None
+
+
+def repo_filename_index() -> set:
+    """Set of every *.md/*.py/*.json basename tracked in the repo tree.
+
+    Lets the bare-ref checker accept a backticked filename that exists
+    somewhere in the repo even when the prose doesn't path-qualify it
+    (common for cross-skill mentions), while still flagging names that
+    exist nowhere — the class of bug where an agent follows a reference
+    and finds nothing."""
+    global _repo_filename_index
+    if _repo_filename_index is None:
+        _repo_filename_index = {
+            p.name for ext in ("md", "py", "json")
+            for p in ROOT.rglob(f"*.{ext}")
+            if ".git" not in p.parts and "__pycache__" not in p.parts
+        }
+    return _repo_filename_index
 
 PASS = "\033[32m✓\033[0m"
 FAIL = "\033[31m✗\033[0m"
@@ -137,17 +171,25 @@ def check_relative_paths(skill_file: Path):
         exists = target.exists()
         label = f"{skill_file.relative_to(ROOT)}: ref '{ref}'"
         check(exists, label, "" if exists else f"resolves to {target} — not found")
-    # 2. Bare refs (no path prefix) are validated ONLY when they name a known
-    #    root reference doc — those are real cross-link targets that must resolve
-    #    at the repo root. Other bare backtick filenames are left unchecked
-    #    because they're commonly prose citations of external / source-corpus
-    #    files (e.g. `gpt-image-2-director.md`), which are not repo links.
+    # 2. Bare refs (no path prefix). Known root reference docs must resolve at
+    #    the repo root (FAIL otherwise). Every other bare filename must exist
+    #    somewhere — referencing file's dir, repo root, or anywhere in the repo
+    #    tree — or it gets a WARN: an agent following it from this file's
+    #    directory would find nothing. Allowlisted external citations (files
+    #    that live outside this repo by design) are exempt.
     bare = re.findall(r'`([\w-]+\.(?:md|py|json))`', text)
+    rel = skill_file.relative_to(ROOT)
     for ref in sorted(set(bare)):
         if ref in ROOT_REFERENCE_DOCS:
             exists = (ROOT / ref).exists()
-            check(exists, f"{skill_file.relative_to(ROOT)}: root ref '{ref}'",
+            check(exists, f"{rel}: root ref '{ref}'",
                   "" if exists else "named as a root reference doc but not found at repo root")
+        elif ref in EXTERNAL_CITATIONS:
+            continue
+        elif not ((skill_file.parent / ref).exists() or (ROOT / ref).exists()
+                  or ref in repo_filename_index()):
+            warn(f"{rel}: bare ref '{ref}' resolves nowhere in the repo",
+                 "path-qualify it, or add to EXTERNAL_CITATIONS if it cites an external file")
 
 
 def check_json_db(label: str, path: Path, required_fields: set):
