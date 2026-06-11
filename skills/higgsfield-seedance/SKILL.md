@@ -15,6 +15,17 @@ Use this skill whenever the user wants a Seedance 2.0 / Seedance Pro prompt, OR
 whenever a Seedance generation has been blocked, flagged, or silently failed.
 This skill's job is to stop credit waste on filter rejections.
 
+> **Engine rules (read with this file):** the hard rendering constraints of the
+> Seedance 2.0 engine — age-blind characters, exit-frame = implicit cut,
+> off-screen = nonexistent, no reflection shots, ≤3 tracked characters, the
+> double-contrast cut rule — live in `ENGINE-RULES.md` in this directory,
+> together with the high-risk shot table (reflections, same-character doubles,
+> crowds, text rendering) and its mitigations. This SKILL.md is the
+> `EN-director` *profile* of that rule core; the `ZH-house` and
+> `bilingual-JSON` profiles (`../../docs/Seedance 2 Skill.md`) obey the same
+> core. Flag high-risk shot types at authoring time — never silently break a
+> rule the project's hero image happens to conflict with.
+
 ---
 
 ## The Filter Model — Read This First
