@@ -598,6 +598,49 @@ def check_memory_summary():
         check(False, "memory summary regeneration", str(e))
 
 
+def check_hard_rules_canonical():
+    """Root SKILL.md is the single home of the HARD RULES checklist.
+
+    CLAUDE.md and DISCIPLINE.md reference the rules; they must carry the
+    canonical-home pointer and must not cite a rule number that doesn't
+    exist — the drift mode where a rule gets added/removed in SKILL.md and
+    a stale '#9' (or a re-stated checklist) lives on elsewhere."""
+    skill_text = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+    section = re.search(r"^## HARD RULES.*?(?=^## )", skill_text,
+                        re.MULTILINE | re.DOTALL)
+    if not check(bool(section), "root SKILL.md has a HARD RULES section"):
+        return
+    rule_numbers = [int(n) for n in
+                    re.findall(r"^(\d+)\.\s+\*\*", section.group(0), re.MULTILINE)]
+    count = len(rule_numbers)
+    ok = rule_numbers == list(range(1, count + 1)) and count > 0
+    check(ok, f"HARD RULES numbered 1..{count} with no gaps",
+          "" if ok else f"found numbering {rule_numbers}")
+
+    # SKILL.md's own prose must agree with the actual count ("items 1–8").
+    for m in re.finditer(r"items\s+1[–-](\d+)", section.group(0)):
+        n = int(m.group(1))
+        check(n == count, f"SKILL.md prose 'items 1–{n}' matches rule count",
+              "" if n == count else f"checklist has {count} rules")
+
+    for name in ("CLAUDE.md", "DISCIPLINE.md"):
+        path = ROOT / name
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        has_pointer = re.search(r"HARD RULES.*(live|lives) in root `?SKILL\.md`?",
+                                text) or re.search(
+                                r"root `?SKILL\.md`?\s*§\s*HARD RULES", text)
+        check(bool(has_pointer), f"{name} carries the canonical-home pointer",
+              "" if has_pointer else "add the 'HARD RULES live in root SKILL.md' note")
+        stale = sorted({int(n) for n in
+                        re.findall(r"(?:HARD RULES?|rule)s?\s*#?\s*\(?(?:items?\s+)?(\d+)",
+                                   text, re.IGNORECASE)
+                        if int(n) > count})
+        check(not stale, f"{name} cites no HARD RULE beyond #{count}",
+              "" if not stale else f"stale rule reference(s): {stale}")
+
+
 def check_repo_hygiene():
     """Fail if generated artifacts are tracked in git.
 
@@ -687,7 +730,11 @@ def main():
     print("\n[ MEMORY ]")
     check_memory_summary()
 
-    # ── 4e. Repo hygiene ────────────────────────────────────────────────────
+    # ── 4f. HARD RULES canonical home ───────────────────────────────────────
+    print("\n[ HARD RULES ]")
+    check_hard_rules_canonical()
+
+    # ── 4g. Repo hygiene ────────────────────────────────────────────────────
     print("\n[ HYGIENE ]")
     check_repo_hygiene()
 
