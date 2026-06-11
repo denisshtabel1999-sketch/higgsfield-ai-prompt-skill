@@ -26,6 +26,9 @@ seedance_lint.py          ← Seedance preflight linter
 sync_specs.py             ← Regenerates specs/ from a models_explore snapshot
 specs/                    ← Machine-readable model specs (generated — never hand-edit;
                             video models now, image models TODO pending snapshot)
+build_index.py            ← Regenerates INDEX.md + checks QUICK FACTS anchors
+INDEX.md                  ← Generated heading index of every SKILL.md
+tests/                    ← pytest suite for the Python tooling (CI-run)
 skills/                   ← 25 sub-skill directories + shared/
 templates/                ← 10 genre templates
 db/                       ← Filter + quality memory JSON databases

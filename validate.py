@@ -504,6 +504,25 @@ def check_description_coverage():
           "" if not orphans else f"no skills/ dir for: {', '.join(orphans)}")
 
 
+def check_index_and_quick_facts():
+    """INDEX.md must match regeneration; QUICK FACTS contract must hold.
+
+    build_index.py is the single authority for both checks — this wrapper
+    just maps its findings into the validation report."""
+    try:
+        import build_index
+    except ImportError as e:
+        check(False, "build_index.py imports", str(e))
+        return
+    problems = build_index.run_checks()
+    index_path = ROOT / "INDEX.md"
+    if not index_path.exists() or index_path.read_text(encoding="utf-8") != build_index.build_index_text():
+        problems.append("INDEX.md stale — rerun: python3 build_index.py")
+    check(not problems, "INDEX.md current + QUICK FACTS anchors resolve",
+          "" if not problems else "; ".join(problems[:3])
+          + (f" (+{len(problems) - 3} more)" if len(problems) > 3 else ""))
+
+
 def check_memory_summary():
     """Keep db/memory-summary.md in step with the memory databases.
 
@@ -596,7 +615,7 @@ def main():
         "model-guide.md", "image-models.md", "vocab.md",
         "prompt-examples.md", "photodump-presets.md",
         "production-benchmarks.md",
-        "higgsfield_memory.py", "sync_specs.py",
+        "higgsfield_memory.py", "sync_specs.py", "build_index.py", "INDEX.md",
         "specs/model-specs.yaml", "specs/model-specs.json", "specs/MODEL-SPECS.md",
         "db/filter-memory.json", "db/quality-memory.json",
     ]
@@ -617,7 +636,11 @@ def main():
     print("\n[ MODEL SPECS ]")
     check_model_specs()
 
-    # ── 4d. Learning-memory summary freshness ───────────────────────────────
+    # ── 4d. Heading index + QUICK FACTS contract ────────────────────────────
+    print("\n[ INDEX / QUICK FACTS ]")
+    check_index_and_quick_facts()
+
+    # ── 4e. Learning-memory summary freshness ───────────────────────────────
     print("\n[ MEMORY ]")
     check_memory_summary()
 

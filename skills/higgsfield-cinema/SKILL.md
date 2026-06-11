@@ -11,6 +11,24 @@ metadata:
 
 # Higgsfield Cinema Studio 2.5
 
+## QUICK FACTS
+*Generated-checked block (build_index.py verifies anchors). Read the linked sections for full context — these lines are routing aids, not the rules themselves.*
+- Three Cinema Studio versions coexist (2.5 / 3.0 / 3.5) — user-selected, no auto-routing; always detect the version first [→](#version-detection-ask-first)
+- Hard 512-character prompt cap; 2.5 @ Element chips eat ~80–100 hidden chars each [→](#prompt-character-limit-512-characters)
+- Elements System: define @Characters/@Locations/@Props once, call everywhere [→](#elements-system-define-once-call-everywhere)
+- 3.5 main UI = three pills (Genre / Style / Camera), each Auto by default — override only with a creative reason [→](#the-three-pill-main-surface)
+- 7 confirmed 3.5 genres: General · Action · Horror · Comedy · Noir · Drama · Epic — never invent genre names [→](#cinema-studio-35-genres)
+- Style presets: 8 Color Palettes · 6 Lighting · 9 Camera Moveset Styles, or free-form Manual Style [→](#style-settings-three-operating-modes)
+- Camera axes: 3 bodies · 5 lenses · focal 8/14/35/50/75mm · aperture f/1.4–f/4–f/11; two camera vocabularies coexist — vocabulary follows the selected model [→](#camera-settings-four-axis-panel)
+- Output enums: 7 aspect ratios incl. 21:9 · 480p/720p/1080p · duration 4–15s · Sound On/Off [→](#cinema-studio-35-output-controls)
+- Lead every delivered shot with the one-line settings strip (UI presets ≠ prompt text; never restate strip values in the body) [→](#per-shot-settings-strip)
+- The UI shot counter caps internal cuts — "strictly N shots" must keep N within it (observed cap 4, TODO confirm) [→](#per-shot-settings-strip)
+- Manual Style = saved ≤2,000-char block of project LAWS (grade, lighting law, texture, performance register); it replaces the preset axes [→](#manual-style-authoring-guide)
+- 480p drafts validate the prompt, NOT the take — no seed param; transfer a look via Hero Frame + start/end-frame pinning [→](#drafts-validate-the-prompt-not-the-take)
+- Resolution matrix has two axes: shot physics × delivery context; 4K-finish pipelines master at model max res in std mode [→](#physics-rendering-resolution-decision-matrix)
+- Seedance fast mode cannot output 1080p — drafting in fast then "switching up" silently changes mode AND res [→](#physics-rendering-resolution-decision-matrix)
+
+
 Cinema Studio is Higgsfield's professional filmmaking environment — a full production
 workflow for multi-shot, character-consistent cinematic content. It's fundamentally
 different from single-clip generation: you're building sequences, not individual videos.
