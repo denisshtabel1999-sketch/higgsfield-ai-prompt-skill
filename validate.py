@@ -622,6 +622,12 @@ def check_repo_hygiene():
                 if "__pycache__" in p.split("/") or p.endswith(".pyc")]
     check(not bytecode, "no Python bytecode tracked in git",
           "" if not bytecode else f"git rm -r --cached: {', '.join(bytecode[:5])}")
+    # PDFs are release artifacts (gh release upload) as of v3.9.0 — tracking
+    # them bloats history on every regeneration. MANIFEST.json carries the
+    # shipped guide's identity instead.
+    pdfs = [p for p in tracked if ".pdf" in p.lower()]
+    check(not pdfs, "no PDF binaries tracked in git",
+          "" if not pdfs else f"git rm --cached: {', '.join(pdfs[:5])}")
 
 
 def main():

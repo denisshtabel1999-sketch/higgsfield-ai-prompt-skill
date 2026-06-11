@@ -36,3 +36,7 @@ CLAUDE.local.md
 *.log
 *.bak
 *.tmp
+
+# Generated PDF artifacts — shipped via gh release upload, never tracked
+docs/user-guide/*.pdf
+docs/user-guide/*.pdf.baseline-*
