@@ -48,6 +48,7 @@ anchors instead of archaeology. Link format: `path#anchor`.
   - [Credit Optimization Guide](skills/higgsfield-assist/SKILL.md#credit-optimization-guide)
     - [Understanding Credits](skills/higgsfield-assist/SKILL.md#understanding-credits)
     - [Credit Cost Tiers (Approximate)](skills/higgsfield-assist/SKILL.md#credit-cost-tiers-approximate)
+    - [Quote From the Ledger, Not From Vibes](skills/higgsfield-assist/SKILL.md#quote-from-the-ledger-not-from-vibes)
     - [The 5 Most Common Credit Waste Patterns](skills/higgsfield-assist/SKILL.md#the-5-most-common-credit-waste-patterns)
     - [The Hero Frame Efficiency Method](skills/higgsfield-assist/SKILL.md#the-hero-frame-efficiency-method)
     - [Model Selection by Budget Scenario](skills/higgsfield-assist/SKILL.md#model-selection-by-budget-scenario)

@@ -1,6 +1,6 @@
 # Higgsfield Memory Summary
 
-Generated: 2026-06-11T15:35:33.135314+00:00
+Generated: 2026-06-11T20:09:04.918738+00:00
 
 
 ## Content Filter Memory
@@ -95,3 +95,9 @@ Total entries: 5
 - **Improved prompt:** Character says: 'We need to leave now.' Framing: medium close-up, locked-off camera. Urgent expression.
 - **Outcome:** fixed
 - **Notes:** 
+
+---
+
+## Generation Ledger
+
+No project ledgers yet — log generations with `higgsfield_memory.py log-gen <project> ...`.

@@ -21,6 +21,8 @@ Generation ledger (db/ledger/ — see db/ledger/README.md):
   python higgsfield_memory.py log-gen <project> '<json row>'
   python higgsfield_memory.py last-gen <project>
   python higgsfield_memory.py amend-gen <id> outcome=kept   # superseding row
+  python higgsfield_memory.py ratio <project> [--model X] [--tag Y] [--global] [--credits]
+  python higgsfield_memory.py budget <project> --shots <manifest.json|csv>
 
 Per-project namespacing:
   python higgsfield_memory.py --project <name> <command> ...
@@ -702,6 +704,76 @@ def cmd_ratio(argv: list):
     print(render_ratio(label, result, credits_mode=args.credits))
 
 
+def _load_shot_manifest(path: Path) -> list:
+    """Shot manifest: JSON list of {shot?, shot_tags, model?} or CSV with
+    columns shot / shot_tags / model (tags separated by ; or , in the cell)."""
+    text = path.read_text(encoding="utf-8")
+    if path.suffix.lower() == ".json":
+        shots = json.loads(text)
+        if not isinstance(shots, list):
+            raise LedgerError("JSON manifest must be a list of shot objects")
+        return shots
+    import csv
+    import io
+    shots = []
+    for rec in csv.DictReader(io.StringIO(text)):
+        tags = re.split(r"[;,]", rec.get("shot_tags") or "")
+        shots.append({
+            "shot": (rec.get("shot") or "").strip() or None,
+            "shot_tags": [t.strip() for t in tags if t.strip()],
+            "model": (rec.get("model") or "").strip() or None,
+        })
+    return shots
+
+
+def render_budget(label: str, result: dict) -> str:
+    lines = [f"{label.upper()} — budget estimate ({len(result['shots'])} planned shot(s))",
+             f"{'shot':<8} {'tags':<34} {'takes':<7} source"]
+    for s in result["shots"]:
+        src = s["source"] + (" (defaults, not data)" if s["source"] == "default" else "")
+        lines.append(f"{s['shot']:<8} {'+'.join(s['tags']):<34} "
+                     f"{round(s['expected_takes'], 1):<7} {src}")
+    lines.append("")
+    lines.append(f"Expected generations: {round(result['total_takes'], 1)}")
+    covered, total = result["credit_coverage"]
+    if result["total_credits"] is not None:
+        lines.append(f"Credit estimate: {round(result['total_credits'])} "
+                     f"(credit data on {covered}/{total} shots)")
+    else:
+        lines.append("Credit estimate: — (no logged credit data for these models)")
+    lines.append(f"Confidence: {result['confidence']}")
+    if result["defaults_used"]:
+        lines.append("⚠ DEFAULT planning ratios used for some shots — these are the "
+                     "documented defaults (2–3:1 simple, 4–6:1 complex), NOT logged "
+                     "data. Log generations to replace them with real numbers.")
+    return "\n".join(lines)
+
+
+def cmd_budget(argv: list):
+    import argparse
+    p = argparse.ArgumentParser(
+        prog="higgsfield_memory.py budget",
+        description="Price a shot manifest from logged generation ratios.")
+    p.add_argument("project")
+    p.add_argument("--shots", required=True, type=Path,
+                   help="manifest file: JSON list or CSV (shot, shot_tags, model)")
+    args = p.parse_args(argv)
+
+    if re.fullmatch(r"_?[A-Za-z0-9][A-Za-z0-9_-]*", args.project):
+        path = LEDGER_DIR / f"{args.project}.json"
+    else:
+        path = ledger_path(args.project)
+    project_rows = load_ledger(path)["rows"]
+    global_rows = load_ledger(GLOBAL_LEDGER)["rows"]
+    try:
+        shots = _load_shot_manifest(args.shots)
+        result = compute_budget(shots, project_rows, global_rows)
+    except (OSError, json.JSONDecodeError, LedgerError) as e:
+        print(json.dumps({"status": "error", "message": str(e)}))
+        sys.exit(1)
+    print(render_budget(args.project, result))
+
+
 def cmd_last_gen(project: str):
     db = load_ledger(ledger_path(project))
     effective = resolve_effective(db["rows"])
@@ -973,6 +1045,19 @@ def build_summary() -> str:
         lines.append(f"- **Outcome:** {e.get('outcome', 'unknown')}")
         lines.append(f"- **Notes:** {e.get('notes', '')}")
 
+    # Generation ledger — current ratios at a glance (real projects only;
+    # underscore-prefixed ledgers are reserved/fixture data).
+    lines.append("\n---\n\n## Generation Ledger\n")
+    projects = project_ledger_files()
+    if not projects:
+        lines.append("No project ledgers yet — log generations with "
+                     "`higgsfield_memory.py log-gen <project> ...`.")
+    for path in projects:
+        db = load_ledger(path)
+        lines.append("\n```")
+        lines.append(render_ratio(db["project"], compute_ratio(db["rows"])))
+        lines.append("```")
+
     return "\n".join(lines)
 
 
@@ -1090,6 +1175,8 @@ if __name__ == "__main__":
         cmd_log_gen(sys.argv[2:])
     elif cmd == "ratio":
         cmd_ratio(sys.argv[2:])
+    elif cmd == "budget":
+        cmd_budget(sys.argv[2:])
     elif cmd == "last-gen" and len(sys.argv) >= 3:
         cmd_last_gen(sys.argv[2])
     elif cmd == "amend-gen" and len(sys.argv) >= 3:
