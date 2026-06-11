@@ -1802,6 +1802,56 @@ What a draft CANNOT validate (re-rolled fresh every generation):
 
 > No specific credit cost numbers are listed in this section. Costs vary by plan and change over time — refer to the live Higgsfield plan documentation.
 
+### Per-Shot Settings Strip
+
+Every Cinema Studio 3.5 shot delivered to a user should lead with a one-line **settings strip** that separates *what gets preset in the UI* from *what goes in the prompt box*. Canonical format:
+
+```
+Genre: <genre> · AR: <ratio> · Quality: <480p|720p|1080p> · Duration: <N>s · Shots: <N> · Sound: <On|Off> · Camera: <Body> / <Lens> / <Focal> / <Aperture> · Style: <Auto | preset, preset, preset | Manual>
+```
+
+Worked example:
+
+```
+Genre: Noir · AR: 21:9 · Quality: 1080p · Duration: 12s · Shots: 3 · Sound: On · Camera: Fine Film / Anamorphic / 50mm / f/1.4 · Style: Manual
+```
+
+Rules for the strip:
+
+- **Everything in the strip is a UI control, not prompt text.** Do not restate strip values inside the prompt body — the engine already has them from the panels, and restating them wastes prompt budget and can conflict.
+- Camera axes follow the 3.5 vocabulary (Camera Settings panel above). `Auto` is a legal value for any position — write it explicitly rather than omitting the position, so the user knows nothing was forgotten.
+- `Style:` is either `Auto`, a comma-separated preset stack (Color Palette, Lighting, Camera Moveset Style — the same label format the Style pill itself shows), or `Manual` (meaning: a saved Manual Style block applies — see the authoring guide below).
+- **The UI shot counter caps internal cuts.** A prompt declaring "strictly N shots" must keep N within the counter's value — if the prompt demands more cuts than the counter allows, the engine improvises which ones to drop. The production-observed cap is **4 shots per generation** (2026-06-11 session; TODO — not yet confirmed in platform docs, verify in the live UI before promising more).
+
+### Manual Style — Authoring Guide
+
+Manual Style is a **saved, reusable style block** (≤2,000 characters, written once per project), not a per-shot scratchpad. Knowing what belongs where prevents both bloated prompts and drifting looks:
+
+| Layer | Belongs there | Examples |
+|-------|---------------|----------|
+| **Manual Style block** (saved once, applies to every shot) | The project's invariant look: grade, lighting *law*, texture, performance register | "Bleach-bypass grade, crushed blacks. All light is motivated and practical — no unmotivated fill, ever. 35mm grain with mild halation. Performances restrained, no theatrical gesture." |
+| **Prompt body** (per shot) | What changes shot to shot: subject, blocking, action, the *specific* light sources of this scene, audio cues | "She crosses the loading dock toward the idling truck; sodium floodlight from the left, headlights raking the wall behind her. Footsteps on wet concrete." |
+| **Three Style axes** (when NOT using Manual) | Preset-stack approximation of the same intent | Sodium Decay + Practicals + Intimate Observer |
+
+Authoring rules for the saved block:
+
+- Write **laws, not descriptions** — "all light is motivated" governs every shot; "a streetlamp glows" belongs in one shot's prompt body.
+- Cover the four registers: **grade** (palette + contrast behavior), **lighting law** (what light is allowed to exist), **texture** (stock/grain/halation), **performance register** (acting scale). One or two sentences each — the 2,000-char budget is for precision, not volume.
+- Apply the Style/Director-Language discipline (no vague labels, no director name-drops — see Mode 3 note above).
+- Manual Style **replaces** the three preset axes — don't also stack presets expecting them to combine.
+
+Worked master-style example (a complete saved block):
+
+```
+Cold procedural thriller. Grade: desaturated cool with steel-blue shadows,
+highlights never bloom, blacks held just above crush. Lighting law: every
+source is practical or motivated — fluorescents, monitors, car headlights;
+no beauty fill; faces may fall to 50% shadow. Texture: clean digital with
+faint sensor noise in low light, no film grain, no halation. Performance
+register: contained and procedural — small eye movements over gestures,
+nobody raises their voice.
+```
+
 ### Image Mode
 
 Cinema Studio 3.5 has a **mode toggle** between Image and Video. The sections above (three-pill main surface, Style Settings, Camera Settings, output controls) describe Video mode — the default surface and the primary use of Cinema Studio 3.5. This subsection covers the differences in Image mode.
