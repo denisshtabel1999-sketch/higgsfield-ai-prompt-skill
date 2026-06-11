@@ -506,6 +506,26 @@ def check_model_specs():
                 guide.read_text(encoding="utf-8"), spec):
             check(ok, label, detail)
 
+    # Image side (Brief #2 item 9): WARN while the type=image snapshot TODO
+    # stands; once specs/image-model-specs.json exists this flips to a real
+    # freshness check mirroring the video side.
+    image_specs = SPECS_DIR / "image-model-specs.json"
+    image_snapshots = list(SPECS_DIR.glob("models_explore_snapshot_image_*.json"))
+    if image_specs.exists() or image_snapshots:
+        check(image_specs.exists() and bool(image_snapshots),
+              "image specs generated from an image snapshot",
+              "run: python3 sync_specs.py --type image")
+    else:
+        warn("image-model specs are TODO (no type=image snapshot yet)",
+             "image-models.md / photodump-presets.md stay hand-maintained; "
+             "dump models_explore type=image into specs/ when ready")
+    for name in ("image-models.md", "photodump-presets.md"):
+        path = ROOT / name
+        if path.exists():
+            stamped = "Specs snapshot:" in path.read_text(encoding="utf-8")
+            check(stamped, f"{name} carries a specs-snapshot stamp",
+                  "" if stamped else "add the snapshot/TODO header line")
+
     # README specs-snapshot badge must show the snapshot date.
     readme = ROOT / "README.md"
     if readme.exists():

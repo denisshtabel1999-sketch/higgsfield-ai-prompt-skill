@@ -5,7 +5,6 @@ generator_version: 1
 snapshot_date: 2026-06-11
 snapshot_file: models_explore_snapshot_2026-06-11.json
 snapshot_sha256: 39da462c2cc168e8d1d142abed93cdb9f3f24a8b03b571bb14a65f63e618d613
-image_models: "TODO (2026-06-11) — pending a type=image models_explore snapshot; video models only below. Do not cite this file for image-model facts."
 models:
   - id: cinematic_studio_3_0
     aliases: []
@@ -627,3 +626,4 @@ models:
           - 720p
           - 1080p
     constraints: []
+image_models: "TODO (2026-06-11) — pending a type=image models_explore snapshot; video models only below. Do not cite this file for image-model facts."
