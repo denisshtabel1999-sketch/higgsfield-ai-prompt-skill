@@ -13,14 +13,28 @@ Rules are grouped into three severities:
   WARN  — likely to pass but weak; harden before generating.
   INFO  — style suggestion, not a flag risk.
 
+Beyond the content-filter rules, the linter is a structural preflight driven
+by the generated specs layer (specs/model-specs.json): declared shot counts,
+beat-duration envelopes, ZH length caps, @handle declaration order, and
+aspect-ratio / resolution / mode / duration legality per model enum — the
+expensive class of failure (e.g. Seedance `fast` + 1080p, Kling 3.0 + 21:9).
+
 Usage:
   python3 seedance_lint.py "<prompt text>"
   echo "<prompt text>" | python3 seedance_lint.py
   python3 seedance_lint.py --file prompt.txt
+  python3 seedance_lint.py --model seedance_2_0 "<prompt>"   # + structural lint
+  python3 seedance_lint.py --model kling3_0 --ar 21:9 "<prompt>"
+  python3 seedance_lint.py --preflight --model seedance_2_0 "<prompt>"
+                                                      # filter + structure + memory recall
   python3 seedance_lint.py --log "<prompt text>"      # log FAIL to filter-memory
   python3 seedance_lint.py --confirmed "<prompt>"     # log as confirmed workaround
 
-Exit codes: 0 = PASS or WARN only, 1 = any FAIL.
+Settings (aspect ratio / resolution / mode / duration) are read from the
+prompt's settings header lines (e.g. `**Aspect ratio**: 16:9  **Duration**: 8s`)
+and can be overridden per-field with --ar / --resolution / --mode / --duration.
+
+Exit codes: 0 = PASS or WARN only, 1 = any FAIL, 2 = usage error.
 
 Filter-memory loopback:
   --log         → on FAIL, append an entry to db/filter-memory.json with
@@ -120,6 +134,18 @@ ANTISLOP = [
     r"\bmind[- ]blowing\b", r"\bjaw[- ]dropping\b",
 ]
 
+# Antislop, ZH edition — the house-format equivalents of the EN list above.
+# Source: docs/Seedance 2 Skill.md (bilingual-JSON profile), forbidden-terms
+# section. Same severity logic: WARN, with a nudge toward concrete vocabulary.
+ANTISLOP_ZH = [
+    "令人叹为观止", "令人惊叹", "令人着迷", "精心打造", "匠心独运", "独具匠心",
+    "视觉盛宴", "光影交响", "完美呈现", "极致体验", "引人入胜", "震撼人心", "巧妙融合",
+]
+
+# ZH prompt hard cap (chars). Source: docs/Seedance 2 Skill.md output contract.
+ZH_CHAR_CAP = 1800
+CJK_RE = re.compile(r"[一-鿿]")
+
 # Shot-block markers. The 【镜头N】 ("shot N") marker is a community
 # shot-delimiter convention, NOT a Seedance-native parse token — its absence
 # across the entire audit corpus (3h47m of transcripts + 16 slides + the
@@ -186,6 +212,276 @@ class Finding:
     rule: str
     hit: str
     fix: str
+
+
+@dataclass
+class Settings:
+    """Generation settings declared for the prompt (header lines or CLI)."""
+    ar: str | None = None
+    resolution: str | None = None
+    mode: str | None = None
+    duration: int | None = None
+
+
+SPECS_DEFAULT = Path(__file__).parent / "specs" / "model-specs.json"
+
+_SETTINGS_PATTERNS = {
+    # Tolerant of **bold**, fullwidth ：, and inline comma-run headers.
+    "ar": re.compile(r"aspect[\s_-]*ratio\**\s*[:：]\s*\**\s*(auto|\d+:\d+)", re.I),
+    "resolution": re.compile(r"\bresolution\**\s*[:：]\s*\**\s*(\d{3,4}p?|4k)", re.I),
+    "mode": re.compile(r"\bmode\**\s*[:：]\s*\**\s*([a-z0-9]+)", re.I),
+    "duration": re.compile(r"\bduration\**\s*[:：]\s*\**\s*(\d+)\s*s", re.I),
+}
+
+
+def parse_settings_header(text: str) -> Settings:
+    """Read declared settings out of the prompt's own header lines."""
+    s = Settings()
+    for field, pat in _SETTINGS_PATTERNS.items():
+        m = pat.search(text)
+        if m:
+            value = m.group(1).lower()
+            setattr(s, field, int(value) if field == "duration" else value)
+    return s
+
+
+def merge_settings(header: Settings, cli: Settings) -> Settings:
+    """CLI flags win per-field over header-declared values."""
+    return Settings(
+        ar=cli.ar or header.ar,
+        resolution=cli.resolution or header.resolution,
+        mode=cli.mode or header.mode,
+        duration=cli.duration if cli.duration is not None else header.duration,
+    )
+
+
+def load_specs(path: Path) -> dict:
+    """Index specs/model-specs.json by id, alias, and normalized name.
+
+    Returns {} when the specs file is absent — structural enum checks then
+    degrade to INFO, they never guess."""
+    try:
+        spec = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    index: dict[str, dict] = {}
+    for m in spec.get("models", []):
+        index[m["id"]] = m
+        for alias in m.get("aliases", []):
+            index[alias] = m
+        index[re.sub(r"[^a-z0-9]+", "", m["name"].lower())] = m
+    return index
+
+
+def resolve_model(index: dict, model_arg: str) -> dict | None:
+    return index.get(model_arg) or index.get(
+        re.sub(r"[^a-z0-9]+", "", model_arg.lower()))
+
+
+# Shot-count declarations, EN + ZH house format.
+DECLARED_SHOTS_RES = [
+    re.compile(r"strictly\s+(\d+)\s+shots?", re.I),
+    re.compile(r"严格\s*(\d+)\s*个?镜头"),
+    re.compile(r"(\d+)\s*个镜头"),
+]
+SHOT_BLOCK_RES = [re.compile(r"【\s*镜头\s*(\d+)\s*】"),
+                  re.compile(r"\[\s*Shot\s*(\d+)\s*\]", re.I)]
+TIMED_BEAT_RANGE = re.compile(r"\[\s*(\d+)\s*[–-]\s*(\d+)\s*s\s*\]")
+HANDLE_RE = re.compile(r"@([\w-]+)")
+HANDLE_DECL_RE = re.compile(r"^\s*[*\-•]?\s*\**@([\w-]+)\**\s*[:=（(—–]")
+
+
+def structural_lint(text: str, settings: Settings, spec: dict | None) -> list[Finding]:
+    """Structural preflight: the failures that waste credits, not the ones
+    that trip the content filter. Enum legality comes ONLY from the specs
+    layer — when no model/spec is available the checks downgrade to INFO."""
+    findings: list[Finding] = []
+
+    # ── Shot count: declared vs actual block markers ─────────────────────
+    declared = None
+    for pat in DECLARED_SHOTS_RES:
+        m = pat.search(text)
+        if m:
+            declared = int(m.group(1))
+            break
+    actual = len({int(m.group(1)) for pat in SHOT_BLOCK_RES
+                  for m in pat.finditer(text)})
+    if declared is not None and actual and declared != actual:
+        findings.append(Finding(
+            "FAIL", "shot-count-mismatch", f"declared {declared}, found {actual} blocks",
+            "The declared shot count must equal the number of 【镜头N】/[Shot N] "
+            "blocks — a mismatch makes the engine improvise cuts."))
+
+    # ── Beat durations vs envelope ───────────────────────────────────────
+    beats = [(int(a), int(b)) for a, b in TIMED_BEAT_RANGE.findall(text)]
+    if beats:
+        for a, b in beats:
+            if b <= a:
+                findings.append(Finding(
+                    "WARN", "reversed-beat", f"[{a}-{b}s]",
+                    "Beat range end must be after its start."))
+        end = max(b for _, b in beats)
+        envelope = settings.duration
+        env_src = "declared duration"
+        if envelope is None and spec and spec.get("duration"):
+            d = spec["duration"]
+            envelope = d["max"] if "max" in d else max(d["values"])
+            env_src = f"{spec['id']} max duration"
+        if envelope is not None and end > envelope:
+            findings.append(Finding(
+                "FAIL", "beats-exceed-envelope", f"beats run to {end}s, {env_src} is {envelope}s",
+                "Timed beats must fit inside the clip duration — trailing "
+                "beats are silently truncated."))
+
+    # ── ZH house-format checks ───────────────────────────────────────────
+    if CJK_RE.search(text):
+        if len(text) > ZH_CHAR_CAP:
+            findings.append(Finding(
+                "FAIL", "zh-overlength", f"{len(text)} chars",
+                f"ZH prompts hard-cap at {ZH_CHAR_CAP} characters "
+                "(docs/Seedance 2 Skill.md output contract). Cut scene-setting "
+                "prose; keep blocking, camera, and audio cues."))
+        zh_hits = [t for t in ANTISLOP_ZH if t in text]
+        if zh_hits:
+            findings.append(Finding(
+                "WARN", "zh-antislop", ", ".join(zh_hits),
+                "ZH marketing-copy phrases correlate with vague prompts. "
+                "Replace with observable detail (lens, light source, texture)."))
+
+    # ── @handle declared before use ──────────────────────────────────────
+    declared_handles: dict[str, int] = {}
+    for i, line in enumerate(text.splitlines()):
+        m = HANDLE_DECL_RE.match(line)
+        if m:
+            declared_handles.setdefault(m.group(1).lower(), i)
+    if declared_handles:
+        for i, line in enumerate(text.splitlines()):
+            for m in HANDLE_RE.finditer(line):
+                h = m.group(1).lower()
+                decl_line = declared_handles.get(h)
+                if decl_line is None:
+                    findings.append(Finding(
+                        "FAIL", "undeclared-handle", f"@{m.group(1)}",
+                        "Other handles are declared in this prompt but this one "
+                        "never is — declare it (`@Name: description`) before use."))
+                elif i < decl_line:
+                    findings.append(Finding(
+                        "FAIL", "handle-used-before-declared", f"@{m.group(1)}",
+                        "Move the @handle declaration above its first use."))
+            # only report each handle once
+        # dedupe by (rule, hit)
+        seen = set()
+        findings = [f for f in findings
+                    if (f.rule, f.hit) not in seen and not seen.add((f.rule, f.hit))]
+    else:
+        used = sorted({m.group(1) for m in HANDLE_RE.finditer(text)})
+        if used:
+            findings.append(Finding(
+                "WARN", "handles-not-declared-in-prompt",
+                ", ".join(f"@{h}" for h in used),
+                "No @handle declarations found in the prompt. Fine if they're "
+                "bound in the UI Elements panel — otherwise declare each "
+                "(`@Name: description`) before first use."))
+
+    # ── Enum legality per specs ──────────────────────────────────────────
+    declared_any = any([settings.ar, settings.resolution, settings.mode,
+                        settings.duration is not None])
+    if spec is None:
+        if declared_any:
+            findings.append(Finding(
+                "INFO", "enums-not-checked", "",
+                "No --model given (or specs file missing) — aspect ratio / "
+                "resolution / mode / duration legality not checked. Pass "
+                "--model <id> to validate against specs/model-specs.json."))
+        return findings
+
+    def enum_check(value, allowed, rule, label):
+        if value is not None and allowed and value not in [str(a).lower() for a in allowed]:
+            findings.append(Finding(
+                "FAIL", rule, f"{label} {value!r}",
+                f"{spec['name']} ({spec['id']}) supports {label}: "
+                f"{', '.join(map(str, allowed))} — per specs/model-specs.json "
+                f"(snapshot-driven; never guess enums)."))
+
+    enum_check(settings.ar, spec.get("aspect_ratios"), "ar-not-supported", "aspect ratio")
+    enum_check(settings.resolution, spec.get("resolutions"),
+               "resolution-not-supported", "resolution")
+    enum_check(settings.mode, spec.get("modes"), "mode-not-supported", "mode")
+
+    if settings.duration is not None and spec.get("duration"):
+        d = spec["duration"]
+        if "min" in d:
+            ok = d["min"] <= settings.duration <= d["max"]
+            allowed_fmt = f"{d['min']}–{d['max']}s"
+        else:
+            ok = settings.duration in d["values"]
+            allowed_fmt = "/".join(map(str, d["values"])) + "s"
+        if not ok:
+            findings.append(Finding(
+                "FAIL", "duration-out-of-range", f"{settings.duration}s",
+                f"{spec['name']} supports {allowed_fmt}."))
+
+    # Cross-parameter constraints from the snapshot (e.g. fast forbids 1080p).
+    declared_map = {"mode": settings.mode, "resolution": settings.resolution,
+                    "aspect_ratio": settings.ar,
+                    "duration": str(settings.duration) if settings.duration is not None else None}
+    for c in spec.get("constraints", []):
+        if declared_map.get(c["param"]) != str(c["value"]).lower():
+            continue
+        for other, forbidden in c.get("forbids", {}).items():
+            val = declared_map.get(other)
+            if val is not None and val in [str(v).lower() for v in forbidden]:
+                findings.append(Finding(
+                    "FAIL", "mode-constraint",
+                    f"{c['param']}={c['value']} + {other}={val}",
+                    f"Illegal combination on {spec['name']}: {c['source']}. "
+                    f"Drop one side (e.g. std mode for 1080p)."))
+        for other, required in c.get("requires", {}).items():
+            val = declared_map.get(other)
+            if val is None:
+                findings.append(Finding(
+                    "WARN", "constraint-requires",
+                    f"{c['param']}={c['value']} requires {other}={required}",
+                    f"{c['source']} — declare {other} explicitly so the "
+                    "combination is verifiable."))
+            elif val != str(required).lower():
+                findings.append(Finding(
+                    "FAIL", "constraint-requires",
+                    f"{c['param']}={c['value']} requires {other}={required}, got {val}",
+                    f"Illegal combination on {spec['name']}: {c['source']}."))
+    return findings
+
+
+def recall(text: str, model_id: str | None, top_n: int = 2) -> list[Finding]:
+    """Surface the most relevant past failures from the learning memory as
+    INFO findings. Read-only; missing/corrupt DBs degrade to a single INFO."""
+    sys.path.insert(0, str(Path(__file__).parent))
+    try:
+        from higgsfield_memory import (FILTER_DB, QUALITY_DB, relevance_score,
+                                       tokenize)
+        query = tokenize(text + " " + (model_id or "seedance"))
+        findings: list[Finding] = []
+        for label, path in (("filter-memory", FILTER_DB), ("quality-memory", QUALITY_DB)):
+            try:
+                entries = json.loads(path.read_text(encoding="utf-8")).get("entries", [])
+            except (OSError, json.JSONDecodeError):
+                continue
+            scored = sorted(((relevance_score(e, query), e) for e in entries),
+                            key=lambda x: x[0], reverse=True)
+            for score, e in scored[:top_n]:
+                if score <= 0:
+                    continue
+                lesson = (e.get("substitution") or e.get("improved_prompt")
+                          or e.get("failure_description") or e.get("notes") or "")
+                findings.append(Finding(
+                    "INFO", "memory-recall",
+                    f"{e.get('id', '?')} ({e.get('category') or e.get('failure_type', '?')}, "
+                    f"outcome={e.get('outcome', 'unknown')})",
+                    f"[{label}] {str(lesson)[:180]}"))
+        return findings
+    except Exception as e:  # noqa: BLE001 — recall must never block a preflight
+        return [Finding("INFO", "memory-recall-unavailable", "",
+                        f"learning-memory lookup failed: {e}")]
 
 
 def _matches(patterns: list[str], text: str) -> list[str]:
@@ -395,6 +691,46 @@ def render(prompt: str, findings: list[Finding]) -> tuple[str, str]:
     return verdict, "\n".join(lines)
 
 
+def render_preflight(prompt: str, filter_findings: list[Finding],
+                     structural: list[Finding], memory: list[Finding]) -> tuple[str, str]:
+    """Single chained report: filter lint → structural lint → memory recall."""
+    all_findings = filter_findings + structural + memory
+    fails = [f for f in all_findings if f.severity == "FAIL"]
+    warns = [f for f in all_findings if f.severity == "WARN"]
+    verdict = "FAIL" if fails else ("WARN" if warns else "PASS")
+
+    word_count = len(re.findall(r"\b\w+\b", prompt.strip()))
+    lines = [f"Seedance Preflight — {verdict}", "=" * 40,
+             f"  words: {word_count}", ""]
+
+    def section(title: str, findings: list[Finding], empty_note: str):
+        lines.append(f"── {title} " + "─" * max(0, 36 - len(title)))
+        if not findings:
+            lines.append(f"  {empty_note}")
+            lines.append("")
+            return
+        for f in findings:
+            tag = {"FAIL": "✗", "WARN": "⚠", "INFO": "·"}[f.severity]
+            head = f"  {tag} [{f.severity}] {f.rule}"
+            if f.hit:
+                head += f" — {f.hit}"
+            lines.append(head)
+            lines.append(f"      fix: {f.fix}")
+        lines.append("")
+
+    section("FILTER LINT", filter_findings, "clean — reads as a filmmaker shot")
+    section("STRUCTURE", structural, "no structural issues detected")
+    section("MEMORY RECALL", memory, "no relevant past failures on record")
+
+    if verdict == "FAIL":
+        lines.append("  Do NOT generate. Apply fixes above, re-run preflight.")
+    elif verdict == "WARN":
+        lines.append("  Likely to pass, but harden the weak spots first.")
+    else:
+        lines.append("  Safe to generate.")
+    return verdict, "\n".join(lines)
+
+
 def log_to_filter_memory(prompt: str, findings: list[Finding], confirmed: bool) -> str:
     """
     Append an entry to db/filter-memory.json. Imports the project's
@@ -445,7 +781,7 @@ def log_to_filter_memory(prompt: str, findings: list[Finding], confirmed: bool) 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Preflight linter for Seedance 2.0 prompts."
+        description="Preflight linter for Seedance 2.0 (and specs-known) prompts."
     )
     parser.add_argument("prompt", nargs="?", help="Prompt text (or use --file / stdin)")
     parser.add_argument("--file", "-f", help="Read prompt from file")
@@ -454,6 +790,18 @@ def main() -> int:
     parser.add_argument("--confirmed", action="store_true",
                         help="Log prompt as a confirmed filter workaround "
                              "(outcome=workaround, substitution_worked=True)")
+    parser.add_argument("--model", help="Model id/name from specs/model-specs.json "
+                                        "(enables enum + constraint checks)")
+    parser.add_argument("--ar", help="Declared aspect ratio (overrides prompt header)")
+    parser.add_argument("--resolution", help="Declared resolution (overrides header)")
+    parser.add_argument("--mode", help="Declared mode (overrides header)")
+    parser.add_argument("--duration", type=int,
+                        help="Declared duration in seconds (overrides header)")
+    parser.add_argument("--specs", type=Path, default=SPECS_DEFAULT,
+                        help="Path to model-specs.json (default: specs/model-specs.json)")
+    parser.add_argument("--preflight", action="store_true",
+                        help="Full chained preflight: filter lint → structural "
+                             "lint → learning-memory recall, one report")
     args = parser.parse_args()
 
     if args.file:
@@ -470,15 +818,46 @@ def main() -> int:
         parser.print_help()
         return 2
 
-    findings = lint(prompt)
-    verdict, report = render(prompt, findings)
+    spec = None
+    if args.model:
+        index = load_specs(args.specs)
+        if not index:
+            print(f"ERROR: specs file missing or invalid: {args.specs} — "
+                  f"run: python3 sync_specs.py", file=sys.stderr)
+            return 2
+        spec = resolve_model(index, args.model)
+        if spec is None:
+            known = ", ".join(sorted(k for k in index if "_" in k))
+            print(f"ERROR: unknown model {args.model!r}. Known ids: {known}",
+                  file=sys.stderr)
+            return 2
+
+    settings = merge_settings(
+        parse_settings_header(prompt),
+        Settings(ar=args.ar.lower() if args.ar else None,
+                 resolution=args.resolution.lower() if args.resolution else None,
+                 mode=args.mode.lower() if args.mode else None,
+                 duration=args.duration))
+
+    filter_findings = lint(prompt)
+    run_structural = args.preflight or spec is not None or any(
+        [settings.ar, settings.resolution, settings.mode, settings.duration is not None])
+    structural = structural_lint(prompt, settings, spec) if run_structural else []
+
+    if args.preflight:
+        memory = recall(prompt, spec["id"] if spec else args.model)
+        verdict, report = render_preflight(prompt, filter_findings, structural, memory)
+        loggable = filter_findings + structural
+    else:
+        loggable = filter_findings + structural
+        verdict, report = render(prompt, loggable)
     print(report)
 
     if args.confirmed:
-        entry_id = log_to_filter_memory(prompt, findings, confirmed=True)
+        entry_id = log_to_filter_memory(prompt, loggable, confirmed=True)
         print(f"\n  logged as confirmed workaround → {entry_id}")
     elif args.log and verdict == "FAIL":
-        entry_id = log_to_filter_memory(prompt, findings, confirmed=False)
+        entry_id = log_to_filter_memory(prompt, loggable, confirmed=False)
         print(f"\n  logged to filter-memory → {entry_id}")
 
     return 1 if verdict == "FAIL" else 0

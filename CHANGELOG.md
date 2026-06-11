@@ -1,5 +1,47 @@
 # Changelog
 
+## v3.9.0 — 2026-06-11
+
+Improvement-briefs mega-release. Implements every numbered item from the two production-grounded improvement briefs (content layer + tooling layer, both dated 2026-06-11), one commit per item. The headline: a machine-readable **specs layer** generated from a live `models_explore` snapshot now anchors model facts repo-wide — the change that removes the library's biggest failure mode, confidently wrong numbers (the guide shipped "Seedance 2.0 — 10s" while the live API said 4–15s).
+
+### Specs layer (Brief 1 #1, Brief 2 #9)
+
+- **New `specs/` + `sync_specs.py`.** `specs/models_explore_snapshot_2026-06-11.json` is a verbatim `models_explore` (type=video) dump; `sync_specs.py` (stdlib) generates `specs/model-specs.yaml` (canonical contract), `model-specs.json` (machine twin), and `MODEL-SPECS.md` — 17 video models with enums, duration envelopes, media roles, and snapshot-extracted constraints (e.g. Seedance `fast` forbids 1080p). Generated, never hand-edited; `--check` verifies.
+- **`validate.py` cross-checks the guide against the snapshot:** stale snapshot (>30 days) WARNs, hand-edited generated files FAIL, and `model-guide.md` Duration cells that contradict the snapshot FAIL — the new check immediately caught and fixed TWO drifted cells (Seedance 2.0 "10s" → 4–15s; Seedance 1.5 Pro "10s" → 4/8/12s). HARD RULES #3/#7 now point at `specs/model-specs.yaml` first, live-verify on stale.
+- **Image side TODO-gated:** `sync_specs.py --type image` is ready but refuses to fabricate without a `type=image` snapshot; `image-models.md` / `photodump-presets.md` carry explicit "Specs snapshot: TODO (2026-06-11)" stamps and a validate.py warning until it lands.
+- **`model-guide.md`** video table gains specs-sourced Aspect ratios + Resolutions columns; **README** gains a specs-snapshot date badge (validate-enforced).
+
+### Preflight linter (Brief 1 #6)
+
+- **`seedance_lint.py` is now a full preflight.** New specs-driven structural pass via `--model`: declared-vs-actual shot counts (`【镜头N】`/`[Shot N]`), beat sums vs duration envelope, ZH 1,800-char cap + ZH antislop list, `@handle` declaration order, and aspect/resolution/mode/duration enum legality — catches Seedance `fast`+1080p and Kling 3.0 + 21:9 before credits burn. `--preflight` chains filter lint → structural lint → learning-memory recall into one PASS/WARN/FAIL report. Existing CLI and exit codes unchanged.
+
+### Content fixes (Brief 1 #2-#5)
+
+- **Physics Resolution Matrix** (higgsfield-cinema) gains a delivery-context axis: native delivery keeps the 720p-for-fast-motion rule; 4K-finish pipelines master at model max res in `std` (never below half delivery res), with the fast-mode trap documented.
+- **"Drafts validate the prompt, not the take"** sections in higgsfield-cinema + higgsfield-seedance: no seed parameter → a 1080p re-run is a fresh roll; what persists vs what re-rolls; Hero Frame + start/end-frame pinning named as the transfer mechanism.
+- **Cinema Studio 3.5 settings strip + Manual Style guide:** canonical per-shot header (`Genre · AR · Quality · Duration · Shots · Sound · Camera · Style`), Manual Style authoring rules (laws not descriptions, ≤2,000 chars) with a worked master-style example, and the shot-counter cap note.
+- **`skills/higgsfield-seedance/ENGINE-RULES.md`** consolidates the engine rules (age-blind, exit-frame = cut, off-screen = nonexistent, no reflections, ≤3 tracked characters, double-contrast cut) that previously lived only in the docs/ JSON-persona file; the three dialects are reframed as profiles (`EN-director` / `ZH-house` / `bilingual-JSON`) of this one core, with a high-risk shot table (reflections incl. mirror-hero workaround, same-character doubles, crowds, text rendering).
+
+### Routing aids (Brief 1 #8)
+
+- **QUICK FACTS blocks** atop the 7 sub-skills over 400 lines — enums/caps/gotchas, every line anchor-linked into the body. **New `build_index.py`** generates root `INDEX.md` from all SKILL.md headings and enforces the contract (large files need the block; anchors must resolve); validate-checked.
+
+### Memory system (Brief 1 #7)
+
+- **Self-feeding memory:** `validate.py` auto-regenerates a stale `db/memory-summary.md` (it had been frozen since 2026-03-08); explicit log-the-outcome steps in higgsfield-troubleshoot + higgsfield-seedance; new `--project <name>` namespacing in `higgsfield_memory.py` (`db/projects/`).
+
+### Tooling & CI (Brief 2 #1-#8, Brief 1 #9)
+
+- **`validate.py` no longer fails without `fpdf2`** — the PDF smoke reports SKIP (exit 0); new `--strict` flag restores fail-on-skip for releases/CI. CONTRIBUTING gains the one-line venv bootstrap.
+- **Reference checker extended:** the three bare `MODELS-DEEP-REFERENCE.md` mentions in higgsfield-cinema are path-qualified, and every bare backticked filename must now resolve somewhere in the repo (WARN otherwise; known external source-corpus citations allowlisted).
+- **Hygiene checks:** tracked Python bytecode or PDFs now FAIL validation.
+- **PDF binaries untracked** (Brief 2 #4): `USER-GUIDE.pdf` + baseline are git-ignored release artifacts (`gh release upload`); tracked `docs/user-guide/MANIFEST.json` (version + normalized-text sha256) is the new comparison baseline, written by `validate_user_guide.py --write-manifest`, with manifest-fallback validation when no baseline PDF exists.
+- **CI extended:** `validate.py --strict`, a seedance-lint exit-code self-check in both directions, pytest, and the eval harness.
+- **New `tests/` pytest suite** (43 cases): every lint rule both directions, sync_specs normalization, memory CLI round-trips against a temp db (`HF_DB_DIR` override), validate exit codes + the guide↔specs contradiction checker.
+- **New `evals/` golden-case harness** (`validate.py --evals`, 40 cases): routing line, MCSLA labels, enum legality per specs, antislop (EN+ZH), preset-name validity — plus five deliberate stale-spec traps asserting the checker itself catches illegal combinations.
+- **Sub-skill description coverage** check moved into stdlib `validate.py` (no longer fpdf2-gated).
+- **HARD RULES canonical home** (Brief 2 #7): root SKILL.md § HARD RULES is the single home; CLAUDE.md + DISCIPLINE.md carry pointers, and validate.py FAILs on numbering drift or stale rule citations.
+
 ## v3.8.3 — 2026-06-08
 
 Cowork file-handling convention. Fixes the issue where uploaded documents (scripts, story bibles, references) and generated files landed anywhere in the project root with no consistent location.

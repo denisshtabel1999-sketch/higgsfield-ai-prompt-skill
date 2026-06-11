@@ -1,5 +1,11 @@
 # Higgsfield Skill Library — Discipline Patterns
 
+> **Canonical-home note:** the operating HARD RULES live in root `SKILL.md`
+> § HARD RULES — pre-delivery checklist, and ONLY there. This file documents
+> discipline *patterns* and may cite individual HARD RULES by number, but it
+> must never restate or renumber the checklist itself (`validate.py` checks
+> for drift between the two surfaces).
+
 ## What this is
 
 Cross-cutting discipline patterns observed in the higgsfield skill library and in a single Higgsfield-team-adjacent author bundle that systematized AI-cinema practice during the 2026 Cannes production cycle. The author bundle (banana-pro-director, cinema-worldbuilder, screenwriter-skill, shotlist-builder, seedance-2-pro-director) is used inside the Higgsfield production team's actual pipeline. The patterns here proved out under real production pressure — five skills, fifteen people, fourteen days, one 90-minute AI feature shipped for Cannes — and recur in higgsfield's own codebase as independently-evolved practice.

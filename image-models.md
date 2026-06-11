@@ -1,5 +1,11 @@
 # Higgsfield Image Models — Complete Reference
 
+> **Specs snapshot: TODO (2026-06-11)** — pending a `type=image` `models_explore`
+> snapshot (`specs/models_explore_snapshot_image_<date>.json` → `python3
+> sync_specs.py --type image`). Until it lands, the tables below are
+> hand-maintained platform claims of the same class that drifted on the video
+> side — verify live before promising exact enums, durations, or pricing.
+
 All image models available in the Higgsfield Image tab.
 ⚠ = Third-party/external model (warning triangle shown in UI)
 G = Google-powered model
