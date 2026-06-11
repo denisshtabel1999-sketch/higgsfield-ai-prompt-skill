@@ -1,4 +1,4 @@
-[![Version](https://img.shields.io/badge/version-3.9.0-blue)](https://github.com/OSideMedia/higgsfield-ai-prompt-skill)
+[![Version](https://img.shields.io/badge/version-3.10.0-blue)](https://github.com/OSideMedia/higgsfield-ai-prompt-skill)
 [![Specs snapshot](https://img.shields.io/badge/specs%20snapshot-2026--06--11-informational)](specs/MODEL-SPECS.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Claude%20Cowork%20%7C%20Claude%20Code-purple)](https://github.com/OSideMedia/higgsfield-ai-prompt-skill)
@@ -245,6 +245,24 @@ For the full coexistence rules, detection signals, naming-collision callouts, an
     └── higgsfield-workspaces/SKILL.md    ← Workspace-first decision layer (Cinema Studio / Lipsync / Draw-to-Video / Sora 2 Trends / Click to Ad / Higgsfield Audio)
 ```
 
+## Generation Ledger
+
+Every generation attempt — kept, rejected, or filter-flagged — gets one row in
+`db/ledger/<project>.json`, logged by the agent in ≤5 seconds (one question,
+one command — never a form). After ~30–40 rows a production has empirical
+takes-per-kept ratios per shot type instead of vibes:
+
+```bash
+python3 higgsfield_memory.py log-gen adze --model seedance_2_0 \
+  --tags dialogue-cu,two-char --outcome rejected --reason extra-cuts
+python3 higgsfield_memory.py ratio adze --credits     # hit rates + money view
+python3 higgsfield_memory.py budget adze --shots plan.json   # price before burning
+```
+
+Tags and reject reasons come from controlled vocabularies (`db/ledger/README.md`);
+rows are append-only with superseding corrections; `ratio` splits structural vs
+stochastic rejections and flags `low-n` rows instead of faking precision.
+
 ## Example Prompts
 
 **Basic:**
@@ -274,4 +292,4 @@ For the full coexistence rules, detection signals, naming-collision callouts, an
 
 ---
 
-Built February 2026 · v3.9.0 (updated 2026-06-11) · Platform: [higgsfield.ai](https://higgsfield.ai)
+Built February 2026 · v3.10.0 (updated 2026-06-11) · Platform: [higgsfield.ai](https://higgsfield.ai)
