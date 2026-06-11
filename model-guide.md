@@ -2,36 +2,38 @@
 
 ## Video Models — Head to Head
 
-| Model | Realism | Character | Motion | Style range | Duration | Audio | Best for |
-|-------|---------|-----------|--------|-------------|----------|-------|----------|
-| Kling 3.0 | ★★★★★ | ★★★★★ | ★★★★★ | ★★★★☆ | 3–15s | ✅ | Cinematic, long, audio, multi-shot |
-| Kling 3.0 Omni | ★★★★★ | ★★★★★ | ★★★★★ | ★★★★☆ | 3–15s | ✅ | Video clone, storyboard control |
-| Kling 3.0 Omni Edit | ★★★★★ | ★★★★★ | — | ★★★★☆ | 3–10s in | ✅ | Edit footage at 3.0 quality |
-| Kling O1 Video (legacy) | ★★★★★ | ★★★★★ | ★★★★☆ | ★★★☆☆ | 5–10s | ❌ | Multi-ref (7), start/end frame |
-| Kling O1 Video Edit (legacy) | ★★★★☆ | ★★★★★ | — | ★★★★★ | 3–10s in | ❌ | Relight, restyle, swap, remove |
-| Kling 3.0 Motion Control | ★★★★★ | ★★★★☆ | ★★★★★ | ★★★☆☆ | 3–30s | Optional | Motion transfer from reference video |
-| Kling 2.6 (legacy) | ★★★★★ | ★★★★★ | ★★★★☆ | ★★★☆☆ | 5–10s | ❌ | Character drama, realism |
-| Kling 2.5 Turbo | ★★★★☆ | ★★★★☆ | ★★★★☆ | ★★★☆☆ | 5–10s | ❌ | Fast Kling iteration |
-| Kling 2.1 Master (deprecated) | ★★★★☆ | ★★★★☆ | ★★★☆☆ | ★★★☆☆ | 5–10s | ❌ | Deprecated — removed from platform. Use Kling 2.6 or 3.0 |
-| Sora 2 | ★★★★☆ | ★★★☆☆ | ★★★★★ | ★★★★☆ | — | ❌ | Epic scale, physics, action |
-| Wan 2.7 | ★★★★★ | ★★★★☆ | ★★★★★ | ★★★★★ | 2–15s | ✅ | 60fps, T2V/I2V/R2V/edit, first+last frame |
-| Wan 2.6 | ★★★★☆ | ★★★☆☆ | ★★★★☆ | ★★★★★ | 5–15s | ❌ | Artistic, stylized, improved physics |
-| Wan 2.5 | ★★★★☆ | ★★★☆☆ | ★★★★☆ | ★★★★★ | 5–10s | ✅ | Native audio, artistic, fantasy |
-| Wan 2.5 Fast | ★★★☆☆ | ★★★☆☆ | ★★★★☆ | ★★★★★ | 5–10s | ✅ | Fast Wan iteration with audio |
-| Seedance 2.0 | ★★★★★ | ★★★★★ | ★★★★★ | ★★★★☆ | 4–15s | ✅ | 12-asset multimodal, complex motion |
-| Seedance 1.5 Pro | ★★★★☆ | ★★★★☆ | ★★★★☆ | ★★★★☆ | 4/8/12s | ✅ | Multilingual audio, lip-sync, drama |
-| Seedance Pro | ★★★☆☆ | ★★★☆☆ | ★★★☆☆ | ★★★☆☆ | 10s | ❌ | Fast iteration, no audio needed |
-| Veo 3.1 | ★★★★★ | ★★★★☆ | ★★★★☆ | ★★★★☆ | 4–8s | ✅ | Ref images, first/last frame, extension, 4K |
-| Veo 3.1 Fast | ★★★★☆ | ★★★★☆ | ★★★★☆ | ★★★★☆ | 4–8s | ✅ | Fast iteration, same caps as 3.1 |
-| Veo 3 | ★★★★☆ | ★★★☆☆ | ★★★★☆ | ★★★☆☆ | 4–8s | ✅ | Nature, environment, stable model |
-| Veo 3.1 Lite | ★★★★☆ | ★★★★☆ | ★★★★☆ | ★★★★☆ | 4–8s | ✅ | Budget 3.1 quality, 1080p, I2V, volume |
-| Veo 3 Fast | ★★★☆☆ | ★★★☆☆ | ★★★☆☆ | ★★★☆☆ | 8s | ✅ | Fast, stable, volume content |
-| Grok Imagine Video | ★★★★☆ | ★★★☆☆ | ★★★★☆ | ★★★★☆ | 1–15s | ✅ | Video editing, animate images, social clips |
-| Minimax Hailuo 2.3 | ★★★★★ | ★★★★☆ | ★★★★★ | ★★★★☆ | 6–10s | ❌ | VFX, fluid motion, anime, physics |
-| Minimax Hailuo 2.3 Fast | ★★★★☆ | ★★★★☆ | ★★★★★ | ★★★★☆ | 6–10s | ❌ | Fast iteration, batch creation |
-| Minimax Hailuo 02 | ★★★★☆ | ★★★☆☆ | ★★★★★ | ★★★☆☆ | 6–10s | ❌ | Dance, sports, fluid motion |
-| Minimax Hailuo 02 Fast | ★★★☆☆ | ★★★☆☆ | ★★★★☆ | ★★★☆☆ | 6–10s | ❌ | Budget motion, 512p |
-| Higgsfield DoP (Lite/Standard/Turbo) | ★★★☆☆ | ★★★☆☆ | ★★★★☆ | ★★★☆☆ | 3–5s | ❌ | I2V specialist, 50+ camera presets, optical physics |
+| Model | Realism | Character | Motion | Style range | Duration | Aspect ratios* | Resolutions* | Audio | Best for |
+|-------|-------|-------|-------|-------|-------|-------|-------|-------|-------|
+| Kling 3.0 | ★★★★★ | ★★★★★ | ★★★★★ | ★★★★☆ | 3–15s | 16:9, 9:16, 1:1 | — | ✅ | Cinematic, long, audio, multi-shot |
+| Kling 3.0 Omni | ★★★★★ | ★★★★★ | ★★★★★ | ★★★★☆ | 3–15s | — | — | ✅ | Video clone, storyboard control |
+| Kling 3.0 Omni Edit | ★★★★★ | ★★★★★ | — | ★★★★☆ | 3–10s in | — | — | ✅ | Edit footage at 3.0 quality |
+| Kling O1 Video (legacy) | ★★★★★ | ★★★★★ | ★★★★☆ | ★★★☆☆ | 5–10s | — | — | ❌ | Multi-ref (7), start/end frame |
+| Kling O1 Video Edit (legacy) | ★★★★☆ | ★★★★★ | — | ★★★★★ | 3–10s in | — | — | ❌ | Relight, restyle, swap, remove |
+| Kling 3.0 Motion Control | ★★★★★ | ★★★★☆ | ★★★★★ | ★★★☆☆ | 3–30s | — | — | Optional | Motion transfer from reference video |
+| Kling 2.6 (legacy) | ★★★★★ | ★★★★★ | ★★★★☆ | ★★★☆☆ | 5–10s | 16:9, 9:16, 1:1 | — | ❌ | Character drama, realism |
+| Kling 2.5 Turbo | ★★★★☆ | ★★★★☆ | ★★★★☆ | ★★★☆☆ | 5–10s | — | — | ❌ | Fast Kling iteration |
+| Kling 2.1 Master (deprecated) | ★★★★☆ | ★★★★☆ | ★★★☆☆ | ★★★☆☆ | 5–10s | — | — | ❌ | Deprecated — removed from platform. Use Kling 2.6 or 3.0 |
+| Sora 2 | ★★★★☆ | ★★★☆☆ | ★★★★★ | ★★★★☆ | — | — | — | ❌ | Epic scale, physics, action |
+| Wan 2.7 | ★★★★★ | ★★★★☆ | ★★★★★ | ★★★★★ | 2–15s | 16:9, 9:16, 1:1, 4:3, 3:4 | 720p, 1080p | ✅ | 60fps, T2V/I2V/R2V/edit, first+last frame |
+| Wan 2.6 | ★★★★☆ | ★★★☆☆ | ★★★★☆ | ★★★★★ | 5–15s | 16:9, 9:16, 1:1 | — | ❌ | Artistic, stylized, improved physics |
+| Wan 2.5 | ★★★★☆ | ★★★☆☆ | ★★★★☆ | ★★★★★ | 5–10s | — | — | ✅ | Native audio, artistic, fantasy |
+| Wan 2.5 Fast | ★★★☆☆ | ★★★☆☆ | ★★★★☆ | ★★★★★ | 5–10s | — | — | ✅ | Fast Wan iteration with audio |
+| Seedance 2.0 | ★★★★★ | ★★★★★ | ★★★★★ | ★★★★☆ | 4–15s | auto, 21:9, 16:9, 4:3, 1:1, 3:4, 9:16 | 480p, 720p, 1080p | ✅ | 12-asset multimodal, complex motion |
+| Seedance 1.5 Pro | ★★★★☆ | ★★★★☆ | ★★★★☆ | ★★★★☆ | 4/8/12s | auto, 16:9, 9:16, 4:3, 3:4, 1:1, 21:9 | 480p, 720p, 1080p | ✅ | Multilingual audio, lip-sync, drama |
+| Seedance Pro | ★★★☆☆ | ★★★☆☆ | ★★★☆☆ | ★★★☆☆ | 10s | — | — | ❌ | Fast iteration, no audio needed |
+| Veo 3.1 | ★★★★★ | ★★★★☆ | ★★★★☆ | ★★★★☆ | 4–8s | 16:9, 9:16 | — | ✅ | Ref images, first/last frame, extension, 4K |
+| Veo 3.1 Fast | ★★★★☆ | ★★★★☆ | ★★★★☆ | ★★★★☆ | 4–8s | — | — | ✅ | Fast iteration, same caps as 3.1 |
+| Veo 3 | ★★★★☆ | ★★★☆☆ | ★★★★☆ | ★★★☆☆ | 4–8s | 16:9, 9:16 | — | ✅ | Nature, environment, stable model |
+| Veo 3.1 Lite | ★★★★☆ | ★★★★☆ | ★★★★☆ | ★★★★☆ | 4–8s | 16:9, 9:16, auto | 720p, 1080p | ✅ | Budget 3.1 quality, 1080p, I2V, volume |
+| Veo 3 Fast | ★★★☆☆ | ★★★☆☆ | ★★★☆☆ | ★★★☆☆ | 8s | — | — | ✅ | Fast, stable, volume content |
+| Grok Imagine Video | ★★★★☆ | ★★★☆☆ | ★★★★☆ | ★★★★☆ | 1–15s | 16:9, 9:16, 1:1 | — | ✅ | Video editing, animate images, social clips |
+| Minimax Hailuo 2.3 | ★★★★★ | ★★★★☆ | ★★★★★ | ★★★★☆ | 6–10s | — | 512, 768, 1080 | ❌ | VFX, fluid motion, anime, physics |
+| Minimax Hailuo 2.3 Fast | ★★★★☆ | ★★★★☆ | ★★★★★ | ★★★★☆ | 6–10s | — | 512, 768, 1080 | ❌ | Fast iteration, batch creation |
+| Minimax Hailuo 02 | ★★★★☆ | ★★★☆☆ | ★★★★★ | ★★★☆☆ | 6–10s | — | 512, 768, 1080 | ❌ | Dance, sports, fluid motion |
+| Minimax Hailuo 02 Fast | ★★★☆☆ | ★★★☆☆ | ★★★★☆ | ★★★☆☆ | 6–10s | — | 512, 768, 1080 | ❌ | Budget motion, 512p |
+| Higgsfield DoP (Lite/Standard/Turbo) | ★★★☆☆ | ★★★☆☆ | ★★★★☆ | ★★★☆☆ | 3–5s | — | — | ❌ | I2V specialist, 50+ camera presets, optical physics |
+
+\* **Aspect ratios / Resolutions columns are sourced from the specs layer** (`specs/MODEL-SPECS.md`, `models_explore` snapshot 2026-06-11) — do not hand-edit them. A `—` means the model is legacy/unsnapshotted or the snapshot does not expose that field; verify live before promising values for those rows. Duration cells for snapshot-covered models are cross-checked against the specs by `validate.py`.
 
 ## Image Models — Head to Head
 

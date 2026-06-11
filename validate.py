@@ -506,6 +506,17 @@ def check_model_specs():
                 guide.read_text(encoding="utf-8"), spec):
             check(ok, label, detail)
 
+    # README specs-snapshot badge must show the snapshot date.
+    readme = ROOT / "README.md"
+    if readme.exists():
+        m = re.search(r"specs%20snapshot-(\d{4})--(\d{2})--(\d{2})",
+                      readme.read_text(encoding="utf-8"))
+        badge_date = "-".join(m.groups()) if m else None
+        check(badge_date == spec["snapshot_date"],
+              "README specs-snapshot badge matches snapshot date",
+              "" if badge_date == spec["snapshot_date"]
+              else f"badge={badge_date}, snapshot={spec['snapshot_date']}")
+
 
 def check_description_coverage():
     """Every skills/<dir>/ has a SUB_SKILL_DESCRIPTIONS entry and vice versa.
