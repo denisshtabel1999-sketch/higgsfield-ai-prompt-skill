@@ -4,3 +4,6 @@
 # seedance_lint.py) is pure stdlib.
 
 fpdf2>=2.8.7,<3   # generate_user_guide.py — renders the PDF user guide
+
+# Dev/CI only (not required to use or validate the skill):
+#   pytest>=8     # tests/ suite — CI installs it in its own step

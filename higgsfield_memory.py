@@ -18,6 +18,7 @@ Usage:
 """
 
 import json
+import os
 import sys
 import re
 from datetime import datetime, timezone
@@ -28,7 +29,9 @@ SCRIPT_DIR = Path(__file__).parent
 # DB files live alongside the script (sibling directory or same directory).
 # The directory is created lazily on first write (see save_db / export_summary),
 # not at import time — importing this module should have no filesystem side effects.
-DB_DIR = SCRIPT_DIR / "db"
+# HF_DB_DIR overrides the location (tests point it at a temp dir; works both
+# in-process and across subprocess boundaries, unlike monkeypatched constants).
+DB_DIR = Path(os.environ["HF_DB_DIR"]) if os.environ.get("HF_DB_DIR") else SCRIPT_DIR / "db"
 FILTER_DB = DB_DIR / "filter-memory.json"
 QUALITY_DB = DB_DIR / "quality-memory.json"
 
