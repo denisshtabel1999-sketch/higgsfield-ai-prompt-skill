@@ -942,13 +942,16 @@ primitives express at the interface level.
 
 ## Pre-flight Linter
 
-Before the user generates, run the prompt through the preflight linter:
+Before the user generates, run the prompt through the full preflight:
 
 ```
-python3 seedance_lint.py "<prompt text>"
+python3 seedance_lint.py --preflight --model seedance_2_0 "<prompt text>"
 ```
 
-The linter is at the project root (`seedance_lint.py`). It flags:
+The linter is at the project root (`seedance_lint.py`). `--preflight` chains
+three passes into one PASS/WARN/FAIL report:
+
+**1. Filter lint** (always on):
 
 - **Real names** of public figures / celebrities / politicians
 - **Brand, IP, franchise names** (Nike, Marvel, Spider-Man, Pokémon, etc.)
@@ -959,9 +962,29 @@ The linter is at the project root (`seedance_lint.py`). It flags:
   on the text encoder, not the filter)
 - **Conflicting instructions** (moving + frozen, bright + dark, etc.)
 
+**2. Structural lint** (with `--model <id>`; driven by `../../specs/model-specs.json`,
+never guessed) — the expensive failure class:
+
+- Declared shot count ("strictly N shots" / 严格N个镜头) vs actual
+  `【镜头N】`/`[Shot N]` block count
+- Timed beats (`[0-4s]`) summing past the declared duration / model max
+- ZH prompts over the 1,800-character hard cap; ZH antislop phrases
+- `@handle` used before its declaration line
+- Aspect ratio / resolution / mode / duration outside the model's enum —
+  catches Seedance `fast`+1080p (fast cannot output 1080p) and Kling 3.0
+  + 21:9 (no native 21:9)
+
+Settings are read from the prompt's own header lines (`**Aspect ratio**: …`,
+`Resolution: …`, `mode: …`, `Duration: Ns`); override per-field with
+`--ar / --resolution / --mode / --duration`.
+
+**3. Memory recall**: the most relevant past failures from
+`../../db/filter-memory.json` / `../../db/quality-memory.json` surface as INFO notes.
+
 Output is `PASS`, `WARN`, or `FAIL` with the specific fix for each rule hit.
 Treat `FAIL` as "do not hit generate." Treat `WARN` as "likely to pass, but
-here is what to harden."
+here is what to harden." Exit codes: 0 pass/warn, 1 fail, 2 usage — safe to
+script.
 
 ---
 
