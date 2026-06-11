@@ -1773,8 +1773,28 @@ Output-side surface in 3.5:
 | Duration | 4s ↔ 15s (preserved across Cinema Studio versions) |
 
 **Quality tiers — practical guidance:**
-- **480p** — draft / exploration tier. Use for prompt iteration before committing to higher-resolution finals.
+- **480p** — draft / exploration tier. Use for prompt iteration before committing to higher-resolution finals. Know its limits: see § Drafts validate the prompt, not the take, directly below.
 - **720p / 1080p** — final-quality tiers. Choice between them depends on what's physical in the scene; see § Physics Rendering — Resolution Decision Matrix below.
+
+#### Drafts validate the prompt, not the take
+
+A 480p draft is **not a cheap preview of the take you will re-render at 1080p**. The Seedance 2.0 schema exposes **no seed parameter** (verified — `../../specs/model-specs.yaml` lists `resolution`, `mode`, `genre` and nothing else), so a higher-resolution re-run is a **fresh roll**, not a re-render. "Approve the take at 480p, re-render it at 1080p" is not a workflow the platform supports.
+
+What a draft CAN validate (persists across rolls, because it's prompt-driven):
+
+- Shot count and structure obedience
+- Blocking obedience (positions, movement directions, entrances/exits)
+- @handle / identity contamination (wrong character traits bleeding across subjects)
+- Dialogue placement
+- Content-filter pass/fail
+
+What a draft CANNOT validate (re-rolled fresh every generation):
+
+- Performance — the specific take's expression, gesture nuance, micro-timing
+- Camera micro-trajectory — the exact path within the named move
+- Beat timing inside the clip
+
+**The documented transfer mechanism for a look you want to keep is the Hero Frame** (`../higgsfield-assist/SKILL.md`) plus **start/end-frame pinning** (§ Keyframe Interpolation in this file) — pin the frame, not the roll. And fine-detail judgments (smoke threads, inscription legibility, reflections) must be **re-checked at final resolution**: 480p hides exactly the detail those judgments are about.
 
 **Sound prompting:** When Sound is On, audio is generated natively alongside video in a single pass. For prompting audio behavior in detail (dialogue, SFX, ambient, music), see `../higgsfield-audio/SKILL.md`.
 
@@ -1897,7 +1917,7 @@ The matrix has **two axes**: the physics of the shot AND the delivery context. R
 | Fast / chaotic motion (explosions, water flow, crowds, rapid camera moves) | **720p** — fewer pixels per frame = smoother flow, less shimmer / artifacting on rapid change | **Model max res, `std` mode** — a 720p master forces a 3× upscale whose cost and artifacts exceed the shimmer it avoids |
 | Fine-detail physics (hair, sand, small particles, glass shards, fabric weave) | **1080p** — pixel density needed to keep small elements sharp instead of muddy or melted | **Model max res, `std` mode** |
 | Grounded weight (heavy vehicles, suspension travel, mass impact) | **1080p** — pixel density needed for material weight to read as real | **Model max res, `std` mode** |
-| Draft / exploration / iteration | **480p** — fastest tier for prompt iteration before committing | **480p for prompt iteration only** — never as a master |
+| Draft / exploration / iteration | **480p** — fastest tier for prompt iteration before committing | **480p for prompt iteration only** — never as a master (see § Drafts validate the prompt, not the take) |
 
 **Upscale-finish rules:**
 

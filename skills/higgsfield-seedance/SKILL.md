@@ -988,6 +988,32 @@ script.
 
 ---
 
+## Drafts Validate the Prompt, Not the Take
+
+The 480p tier is for **prompt iteration**, not take approval. Seedance 2.0
+exposes **no seed parameter** (verified — `../../specs/model-specs.yaml`
+lists `resolution`, `mode`, `genre` and nothing else), so re-running an
+approved 480p draft at 1080p is a **fresh roll**: a new performance, a new
+camera micro-trajectory, new timing. "Approve cheap, re-render at quality"
+is not a workflow Seedance supports.
+
+| Persists across rolls (prompt-driven — a draft CAN validate it) | Re-rolled fresh every generation (a draft CANNOT validate it) |
+|---|---|
+| Shot count and structure obedience | Performance — expression, gesture nuance, micro-timing |
+| Blocking obedience (positions, directions, entrances/exits) | Camera micro-trajectory within the named move |
+| @handle / identity contamination | Beat timing inside the clip |
+| Dialogue placement | Fine detail (smoke threads, inscription legibility, reflections) |
+| Content-filter pass/fail | |
+
+To carry a look you approved into the final render, use the documented
+transfer mechanism: the **Hero Frame** (`../higgsfield-assist/SKILL.md`)
+plus **start/end-frame pinning** (start_image / end_image reference roles —
+see § Reference Roles above). Pin the frame, not the roll. Fine-detail
+judgments must be **re-checked at final resolution** — 480p hides exactly
+the detail they're about.
+
+---
+
 ## The Rewrite Playbook
 
 When the linter fires, apply the substitutions below. These are drawn from
