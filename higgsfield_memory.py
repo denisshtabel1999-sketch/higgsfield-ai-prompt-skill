@@ -16,6 +16,12 @@ Usage:
   python higgsfield_memory.py export-summary
   python higgsfield_memory.py health
 
+Generation ledger (db/ledger/ — see db/ledger/README.md):
+  python higgsfield_memory.py log-gen <project> --model X --tags a,b --outcome kept
+  python higgsfield_memory.py log-gen <project> '<json row>'
+  python higgsfield_memory.py last-gen <project>
+  python higgsfield_memory.py amend-gen <id> outcome=kept   # superseding row
+
 Per-project namespacing:
   python higgsfield_memory.py --project <name> <command> ...
 
@@ -380,6 +386,176 @@ def write_global():
         print(json.dumps({"status": "error", "message": f"Failed to write _global: {e}"}))
         sys.exit(1)
 
+
+class LedgerError(ValueError):
+    """Raised on invalid ledger writes. The CLI maps it to a JSON error +
+    exit 1; in-process callers (the seedance_lint bridge) catch it so a
+    logging hiccup can never block a lint run."""
+
+
+def log_gen_row(project: str, fields: dict) -> dict:
+    """The single write path for ledger rows: fill id/ts, canonicalize the
+    model id, schema-validate, append, regenerate _global. Raises
+    LedgerError with the full problem list on invalid input — failing fast
+    with the vocabulary printed is what keeps logging at one retry max."""
+    model_ids = load_specs_models()
+    if not model_ids:
+        raise LedgerError("specs/model-specs.json missing or unreadable — "
+                          "the ledger validates model ids against the specs "
+                          "layer (run: python3 sync_specs.py)")
+    path = ledger_path(project)
+    db = load_ledger(path)
+
+    row = {k: v for k, v in fields.items() if v is not None}
+    row.setdefault("id", next_gen_id(project, db["rows"]))
+    row.setdefault("ts", now_iso())
+    row.setdefault("shot_tags", [])
+    row.setdefault("draft_tier", False)
+    if row.get("model") in model_ids:
+        row["model"] = model_ids[row["model"]]  # alias → canonical
+
+    prior_ids = {r.get("id") for r in db["rows"]}
+    superseded = {r.get("supersedes") for r in db["rows"] if r.get("supersedes")}
+    if row["id"] in prior_ids:
+        raise LedgerError(f"duplicate id {row['id']}")
+    problems = validate_ledger_row(row, project, prior_ids, superseded, model_ids)
+    if problems:
+        raise LedgerError("; ".join(problems))
+
+    db["rows"].append(row)
+    save_ledger(path, db)
+    write_global()
+    return row
+
+
+def _parse_log_gen_args(argv: list):
+    import argparse
+    p = argparse.ArgumentParser(
+        prog="higgsfield_memory.py log-gen",
+        description="Log one generation attempt to a project ledger "
+                    "(one line — see db/ledger/README.md).")
+    p.add_argument("project")
+    p.add_argument("json_row", nargs="?",
+                   help="raw JSON row (alternative to the flags below)")
+    p.add_argument("--model", help="specs model id or alias")
+    p.add_argument("--tags", help="comma-separated shot tags (controlled vocab)")
+    p.add_argument("--outcome", choices=sorted(OUTCOMES))
+    p.add_argument("--reason", help="reject_reason (required when rejected)")
+    p.add_argument("--mode")
+    p.add_argument("--resolution")
+    p.add_argument("--aspect")
+    p.add_argument("--duration", type=int, help="duration_s")
+    p.add_argument("--cuts", type=int, help="internal_cuts")
+    p.add_argument("--scene", help="scene_ref")
+    p.add_argument("--draft", action="store_true", help="mark as draft-tier roll")
+    p.add_argument("--credits", type=int)
+    p.add_argument("--notes")
+    p.add_argument("--prompt", help="prompt text — stored only as sha1[:12] prompt_hash")
+    return p.parse_args(argv)
+
+
+def cmd_log_gen(argv: list):
+    args = _parse_log_gen_args(argv)
+    if args.json_row:
+        try:
+            fields = json.loads(args.json_row)
+        except json.JSONDecodeError as e:
+            print(json.dumps({"status": "error", "message": f"Invalid JSON: {e}"}))
+            sys.exit(1)
+    else:
+        import hashlib
+        fields = {
+            "model": args.model,
+            "shot_tags": [t.strip() for t in args.tags.split(",")] if args.tags else None,
+            "outcome": args.outcome,
+            "reject_reason": args.reason,
+            "mode": args.mode,
+            "resolution": args.resolution,
+            "aspect": args.aspect,
+            "duration_s": args.duration,
+            "internal_cuts": args.cuts,
+            "scene_ref": args.scene,
+            "draft_tier": True if args.draft else None,
+            "credits": args.credits,
+            "notes": args.notes,
+            "prompt_hash": (hashlib.sha1(args.prompt.strip().encode("utf-8"))
+                            .hexdigest()[:12] if args.prompt else None),
+        }
+    try:
+        row = log_gen_row(args.project, fields)
+    except LedgerError as e:
+        print(json.dumps({"status": "error", "message": str(e)}))
+        sys.exit(1)
+    print(json.dumps({"status": "ok", "id": row["id"], "outcome": row["outcome"],
+                      "project": args.project}))
+
+
+def cmd_last_gen(project: str):
+    db = load_ledger(ledger_path(project))
+    effective = resolve_effective(db["rows"])
+    if not effective:
+        print(json.dumps({"status": "empty", "project": project}))
+        return
+    print(json.dumps(effective[-1], indent=2, ensure_ascii=False))
+
+
+def cmd_amend_gen(argv: list):
+    """amend-gen <id> field=value [...] — writes a SUPERSEDING row (full
+    clone of the original with overrides); history is never edited."""
+    if len(argv) < 2 or "=" not in argv[1]:
+        print(json.dumps({"status": "error",
+                          "message": "usage: amend-gen <id> field=value [field=value ...]"}))
+        sys.exit(1)
+    gen_id = argv[0]
+    m = GEN_ID_RE.match(gen_id)
+    if not m:
+        print(json.dumps({"status": "error", "message": f"Bad id: {gen_id!r}"}))
+        sys.exit(1)
+    project = m.group(1)
+    db = load_ledger(ledger_path(project))
+    original = next((r for r in db["rows"] if r.get("id") == gen_id), None)
+    if original is None:
+        print(json.dumps({"status": "error", "message": f"{gen_id} not found"}))
+        sys.exit(1)
+    superseded = {r.get("supersedes") for r in db["rows"] if r.get("supersedes")}
+    if gen_id in superseded:
+        latest = next(r["id"] for r in reversed(db["rows"])
+                      if r.get("supersedes") == gen_id)
+        print(json.dumps({"status": "error",
+                          "message": f"{gen_id} is already superseded — amend the "
+                                     f"latest amendment ({latest}) instead"}))
+        sys.exit(1)
+
+    clone = {k: v for k, v in original.items()
+             if k not in ("id", "ts", "supersedes")}
+    for pair in argv[1:]:
+        key, _, value = pair.partition("=")
+        if key == "shot_tags" or key == "tags":
+            clone["shot_tags"] = [t.strip() for t in value.split(",") if t.strip()]
+        elif value.lower() in ("true", "false"):
+            clone[key] = value.lower() == "true"
+        elif value.lower() in ("null", "none", ""):
+            clone.pop(key, None)
+        else:
+            try:
+                clone[key] = int(value)
+            except ValueError:
+                clone[key] = value
+    # An outcome flip away from 'rejected' drops the now-invalid reason
+    # unless the amendment explicitly set one.
+    if clone.get("outcome") != "rejected":
+        amended_keys = {p.partition("=")[0] for p in argv[1:]}
+        if "reject_reason" not in amended_keys:
+            clone.pop("reject_reason", None)
+    clone["supersedes"] = gen_id
+    try:
+        row = log_gen_row(project, clone)
+    except LedgerError as e:
+        print(json.dumps({"status": "error", "message": str(e)}))
+        sys.exit(1)
+    print(json.dumps({"status": "ok", "id": row["id"], "supersedes": gen_id,
+                      "outcome": row.get("outcome")}))
+
 # ── Commands ───────────────────────────────────────────────────────────────────
 
 def add_filter(entry_json: str):
@@ -698,6 +874,12 @@ if __name__ == "__main__":
         improved = sys.argv[4] if len(sys.argv) >= 5 else ""
         notes = sys.argv[5] if len(sys.argv) >= 6 else ""
         update_quality(sys.argv[2], sys.argv[3], improved, notes)
+    elif cmd == "log-gen" and len(sys.argv) >= 3:
+        cmd_log_gen(sys.argv[2:])
+    elif cmd == "last-gen" and len(sys.argv) >= 3:
+        cmd_last_gen(sys.argv[2])
+    elif cmd == "amend-gen" and len(sys.argv) >= 3:
+        cmd_amend_gen(sys.argv[2:])
     elif cmd == "stats":
         stats()
     elif cmd == "export-summary":

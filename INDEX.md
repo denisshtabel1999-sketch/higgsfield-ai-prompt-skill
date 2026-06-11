@@ -18,6 +18,7 @@ anchors instead of archaeology. Link format: `path#anchor`.
     - [Check Templates for Genre Match](SKILL.md#check-templates-for-genre-match)
     - [Build the Prompt Using the MCSLA Formula](SKILL.md#build-the-prompt-using-the-mcsla-formula)
     - [Output Format](SKILL.md#output-format)
+  - [Generation Ledger — log every result](SKILL.md#generation-ledger-log-every-result)
   - [@ Reference Rules](SKILL.md#reference-rules)
   - [Shared Resources](SKILL.md#shared-resources)
   - [Sub-Skills (auto-loaded as needed)](SKILL.md#sub-skills-auto-loaded-as-needed)
@@ -537,6 +538,7 @@ anchors instead of archaeology. Link format: `path#anchor`.
     - [Step 5: Surface findings only when material](skills/higgsfield-recall/SKILL.md#step-5-surface-findings-only-when-material)
   - [Manual Recall (User-Initiated)](skills/higgsfield-recall/SKILL.md#manual-recall-user-initiated)
   - [Pre-Generation Checklist (run mentally before every prompt)](skills/higgsfield-recall/SKILL.md#pre-generation-checklist-run-mentally-before-every-prompt)
+  - [Log the Generation Result — One Question, One Command](skills/higgsfield-recall/SKILL.md#log-the-generation-result-one-question-one-command)
   - [Database Status Check](skills/higgsfield-recall/SKILL.md#database-status-check)
   - [Related skills](skills/higgsfield-recall/SKILL.md#related-skills)
 

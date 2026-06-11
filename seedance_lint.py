@@ -802,6 +802,9 @@ def main() -> int:
     parser.add_argument("--preflight", action="store_true",
                         help="Full chained preflight: filter lint → structural "
                              "lint → learning-memory recall, one report")
+    parser.add_argument("--project", default="default",
+                        help="Generation-ledger project for the --log bridge "
+                             "(default: 'default'; see db/ledger/README.md)")
     args = parser.parse_args()
 
     if args.file:
@@ -859,6 +862,28 @@ def main() -> int:
     elif args.log and verdict == "FAIL":
         entry_id = log_to_filter_memory(prompt, loggable, confirmed=False)
         print(f"\n  logged to filter-memory → {entry_id}")
+        # Ledger bridge: a filter burn is a real generation attempt — it
+        # belongs in the takes-per-kept denominator as outcome=flagged.
+        if spec is not None:
+            try:
+                from higgsfield_memory import LedgerError, log_gen_row
+                import hashlib
+                row = log_gen_row(args.project, {
+                    "model": spec["id"],
+                    "shot_tags": [],
+                    "outcome": "flagged",
+                    "notes": "seedance preflight filter FAIL",
+                    "prompt_hash": hashlib.sha1(
+                        prompt.strip().encode("utf-8")).hexdigest()[:12],
+                })
+                print(f"  ledger row → {row['id']} (outcome=flagged, "
+                      f"project={args.project})")
+            except Exception as e:  # noqa: BLE001 — logging must never block lint
+                print(f"  ledger row NOT written: {e}")
+        else:
+            print("  ledger row NOT written — pass --model <id> to record the "
+                  "filter burn in the generation ledger (model ids are never "
+                  "fabricated)")
 
     return 1 if verdict == "FAIL" else 0
 
