@@ -23,6 +23,9 @@ photodump-presets.md      ← 29 Photodump style presets
 validate.py               ← Pre-release health checks
 higgsfield_memory.py      ← DB operations for learning memory
 seedance_lint.py          ← Seedance preflight linter
+sync_specs.py             ← Regenerates specs/ from a models_explore snapshot
+specs/                    ← Machine-readable model specs (generated — never hand-edit;
+                            video models now, image models TODO pending snapshot)
 skills/                   ← 25 sub-skill directories + shared/
 templates/                ← 10 genre templates
 db/                       ← Filter + quality memory JSON databases

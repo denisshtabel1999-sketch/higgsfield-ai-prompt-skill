@@ -21,9 +21,28 @@ import json
 import re
 import subprocess
 import sys
+from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).parent
+SPECS_DIR = ROOT / "specs"
+SPECS_JSON = SPECS_DIR / "model-specs.json"
+SNAPSHOT_MAX_AGE_DAYS = 30
+
+# model-guide.md row names that don't normalize directly to a snapshot model
+# name. Guide rows with NO mapping (legacy/deprecated/unsnapshotted models)
+# are intentionally skipped — the specs layer is authoritative only for the
+# models the snapshot actually contains.
+GUIDE_NAME_OVERRIDES = {
+    "veo31": "veo3_1",
+    "veo3": "veo3",
+    "grokimaginevideo": "grok_video",
+    # Hailuo variants share one snapshot entry (variant = a `model` param)
+    "minimaxhailuo23": "minimax_hailuo",
+    "minimaxhailuo23fast": "minimax_hailuo",
+    "minimaxhailuo02": "minimax_hailuo",
+    "minimaxhailuo02fast": "minimax_hailuo",
+}
 DB_FILES = {
     "filter": ROOT / "db/filter-memory.json",
     "quality": ROOT / "db/quality-memory.json",
@@ -326,6 +345,142 @@ def parse_args():
     return parser.parse_args()
 
 
+def _norm_model_name(s: str) -> str:
+    s = re.sub(r"\*\*", "", s)
+    s = re.sub(r"\([^)]*\)", "", s)  # strip qualifiers like "(legacy)"
+    return re.sub(r"[^a-z0-9]+", "", s.lower())
+
+
+def _parse_duration_cell(cell: str):
+    """Parse a guide Duration cell into a comparable shape.
+
+    Returns ("range", (lo, hi)) | ("values", [..]) | ("single", n) | None.
+    Only these number patterns are ever read, so stars/emoji/notes in other
+    columns can't produce false positives."""
+    cell = cell.replace("**", "")
+    m = re.search(r"(\d+)\s*[–\-]\s*(\d+)\s*s", cell)
+    if m:
+        return ("range", (int(m.group(1)), int(m.group(2))))
+    m = re.search(r"(\d+(?:/\d+)+)\s*s", cell)
+    if m:
+        return ("values", sorted(int(v) for v in m.group(1).split("/")))
+    m = re.search(r"(\d+)\s*s\b", cell)
+    if m:
+        return ("single", int(m.group(1)))
+    return None
+
+
+def check_guide_against_specs(guide_text: str, spec: dict) -> list:
+    """Cross-check model-guide.md Duration cells against the specs layer.
+
+    The Duration column documents the model's supported envelope, so a guide
+    range must equal the spec envelope exactly and a single value passes only
+    when the spec envelope IS that single value — "10s" against a 4–15s model
+    is precisely the confidently-wrong number this layer exists to catch.
+    Returns (ok, label, detail) tuples so it stays unit-testable."""
+    name_index, seen, ambiguous = {}, {}, set()
+    for m in spec.get("models", []):
+        nm = _norm_model_name(m["name"])
+        if nm in seen and seen[nm] != m["id"]:
+            ambiguous.add(nm)  # e.g. two "Cinema Studio Video" entries
+        seen[nm] = m["id"]
+    name_index = {nm: mid for nm, mid in seen.items() if nm not in ambiguous}
+    by_id = {m["id"]: m for m in spec.get("models", [])}
+
+    results = []
+    duration_idx = None
+    for line in guide_text.splitlines():
+        if not line.lstrip().startswith("|"):
+            duration_idx = None
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if re.match(r"^\s*\|[\s|:\-–]+\|?\s*$", line):
+            continue  # separator row
+        if "Duration" in cells:
+            duration_idx = cells.index("Duration")
+            continue
+        if duration_idx is None or len(cells) <= duration_idx:
+            continue
+        nm = _norm_model_name(cells[0])
+        mid = GUIDE_NAME_OVERRIDES.get(nm) or name_index.get(nm)
+        model = by_id.get(mid)
+        if model is None or model.get("duration") is None:
+            continue
+        parsed = _parse_duration_cell(cells[duration_idx])
+        if parsed is None:
+            continue  # "—" / prose cell — nothing checkable
+        d = model["duration"]
+        spec_env = ((d["min"], d["max"]) if "min" in d
+                    else (min(d["values"]), max(d["values"])))
+        kind, val = parsed
+        if kind == "range":
+            ok = val == spec_env
+        elif kind == "values":
+            ok = ("values" in d and val == d["values"]) or (
+                "min" in d and (val[0], val[-1]) == spec_env)
+        else:  # single value claims the whole envelope
+            ok = spec_env == (val, val) or d.get("values") == [val]
+        spec_fmt = (f"{d['min']}–{d['max']}s" if "min" in d
+                    else "/".join(map(str, d["values"])) + "s")
+        results.append((
+            ok,
+            f"model-guide.md: '{cells[0].replace('**', '')}' duration matches specs ({mid})",
+            "" if ok else f"guide says {cells[duration_idx]!r}, snapshot says {spec_fmt}",
+        ))
+    return results
+
+
+def check_model_specs():
+    """The specs layer: present, fresh, regenerable, and not contradicted."""
+    if not check(SPECS_JSON.exists(), "specs/model-specs.json exists",
+                 "" if SPECS_JSON.exists() else "run: python3 sync_specs.py"):
+        return
+    try:
+        spec = json.loads(SPECS_JSON.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        check(False, "specs/model-specs.json is valid JSON", str(e))
+        return
+    check(True, "specs/model-specs.json is valid JSON")
+
+    # Snapshot age — stale specs are how confidently-wrong numbers come back.
+    try:
+        age = (date.today() - date.fromisoformat(spec["snapshot_date"])).days
+    except (KeyError, ValueError) as e:
+        check(False, "specs snapshot_date parses", str(e))
+        return
+    if age > SNAPSHOT_MAX_AGE_DAYS:
+        warn(f"specs snapshot is {age} days old (>{SNAPSHOT_MAX_AGE_DAYS})",
+             "re-dump models_explore into specs/ and rerun sync_specs.py")
+    else:
+        check(True, f"specs snapshot fresh ({spec['snapshot_date']}, {age}d old)")
+
+    # Generated files must match a regeneration from the committed snapshot —
+    # catches hand-edits of generated files AND snapshot/generator changes.
+    try:
+        import sync_specs
+        snapshot_path = SPECS_DIR / spec["snapshot_file"]
+        rebuilt = sync_specs.build_spec(snapshot_path)
+        regen = {
+            sync_specs.YAML_OUT: sync_specs.emit_yaml(rebuilt),
+            sync_specs.JSON_OUT: sync_specs.emit_json(rebuilt),
+            sync_specs.MD_OUT: sync_specs.emit_markdown(rebuilt),
+        }
+        stale = [p.name for p, content in regen.items()
+                 if not p.exists() or p.read_text(encoding="utf-8") != content]
+        check(not stale, "specs files match regeneration from snapshot",
+              "" if not stale else f"stale: {', '.join(stale)} — rerun python3 sync_specs.py")
+    except Exception as e:  # noqa: BLE001 — report, don't crash the validator
+        check(False, "specs regeneration check", f"{type(e).__name__}: {e}")
+        return
+
+    # model-guide.md numbers must not contradict the snapshot.
+    guide = ROOT / "model-guide.md"
+    if guide.exists():
+        for ok, label, detail in check_guide_against_specs(
+                guide.read_text(encoding="utf-8"), spec):
+            check(ok, label, detail)
+
+
 def check_repo_hygiene():
     """Fail if generated artifacts are tracked in git.
 
@@ -380,7 +535,8 @@ def main():
         "model-guide.md", "image-models.md", "vocab.md",
         "prompt-examples.md", "photodump-presets.md",
         "production-benchmarks.md",
-        "higgsfield_memory.py",
+        "higgsfield_memory.py", "sync_specs.py",
+        "specs/model-specs.yaml", "specs/model-specs.json", "specs/MODEL-SPECS.md",
         "db/filter-memory.json", "db/quality-memory.json",
     ]
     for name in expected_root_files:
@@ -395,7 +551,11 @@ def main():
     print("\n[ DISPATCHER / SKILL PARITY ]")
     check_dispatcher_parity()
 
-    # ── 4c. Repo hygiene ────────────────────────────────────────────────────
+    # ── 4c. Model specs layer ───────────────────────────────────────────────
+    print("\n[ MODEL SPECS ]")
+    check_model_specs()
+
+    # ── 4d. Repo hygiene ────────────────────────────────────────────────────
     print("\n[ HYGIENE ]")
     check_repo_hygiene()
 
