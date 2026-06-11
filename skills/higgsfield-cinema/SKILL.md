@@ -1890,12 +1890,21 @@ Cinema Studio 3.5 exposes an **AI director toggle** in the bottom toolbar of the
 
 This rule applies to **Seedance 2.0** and **Cinema Studio 3.x** outputs (3.0 and 3.5). Higher resolution is not always better — the right choice depends on what is physical in the scene. Rendering more pixels per frame on rapid motion produces shimmer and artifacting; rendering fewer pixels per frame on fine-detail physics produces muddy or melted small elements. Match the resolution tier to the physics of the shot.
 
-| Scene type | Recommended resolution | Reason |
-|------------|------------------------|--------|
-| Fast / chaotic motion (explosions, water flow, crowds, rapid camera moves) | **720p** | Fewer pixels per frame = smoother flow, less shimmer / artifacting on rapid change |
-| Fine-detail physics (hair, sand, small particles, glass shards, fabric weave) | **1080p** | Pixel density needed to keep small elements sharp instead of muddy or melted |
-| Grounded weight (heavy vehicles, suspension travel, mass impact) | **1080p** | Pixel density needed for material weight to read as real |
-| Draft / exploration / iteration | **480p** | Fastest tier for prompt iteration before committing to a final-quality generation |
+The matrix has **two axes**: the physics of the shot AND the delivery context. Read the physics row first, then apply the delivery-context column — a recommendation that is correct for native delivery can be wrong for an upscale-finish pipeline.
+
+| Scene type | Native delivery (social post, 1080p timeline) | Upscale-finish pipeline (4K master) |
+|------------|------------------------------------------------|--------------------------------------|
+| Fast / chaotic motion (explosions, water flow, crowds, rapid camera moves) | **720p** — fewer pixels per frame = smoother flow, less shimmer / artifacting on rapid change | **Model max res, `std` mode** — a 720p master forces a 3× upscale whose cost and artifacts exceed the shimmer it avoids |
+| Fine-detail physics (hair, sand, small particles, glass shards, fabric weave) | **1080p** — pixel density needed to keep small elements sharp instead of muddy or melted | **Model max res, `std` mode** |
+| Grounded weight (heavy vehicles, suspension travel, mass impact) | **1080p** — pixel density needed for material weight to read as real | **Model max res, `std` mode** |
+| Draft / exploration / iteration | **480p** — fastest tier for prompt iteration before committing | **480p for prompt iteration only** — never as a master |
+
+**Upscale-finish rules:**
+
+- Master at the model's **maximum resolution in `std` mode**. Never master below **half the delivery resolution** — below that, the upscaler is inventing detail, not recovering it.
+- Per-shot 720p in a 4K-finish pipeline is allowed only as a **logged exception** (e.g. a shot where shimmer demonstrably ruins the take at 1080p) — note the shot and reason in the shotlist so the finishing stage knows the upscale factor changed.
+
+> **The fast-mode trap (verified from the model schema):** Seedance 2.0's `fast` mode **cannot output 1080p** — per `../../specs/model-specs.yaml`, `mode=fast` forbids `resolution=1080p`. Drafting in `fast` and then "switching up to 1080p" silently changes BOTH the mode and the resolution: the final render runs through a different pipeline (`std`) than the one your draft validated. Preflight the final combination explicitly: `python3 seedance_lint.py --model seedance_2_0 --mode fast --resolution 1080p` fails for exactly this reason.
 
 **See also:** `../higgsfield-seedance/SKILL.md` for Seedance 2.0 prompt mode guidance.
 
