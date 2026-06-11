@@ -138,6 +138,248 @@ def relevance_score(entry: dict, query_tokens: set) -> int:
     entry_tokens = tokenize(text)
     return len(query_tokens & entry_tokens)
 
+
+# ── Generation Ledger ──────────────────────────────────────────────────────────
+# Empirical hit-rate system (Brief #3). Unlike the filter/quality memories
+# (failure ledgers), this logs EVERY generation attempt — kept, rejected, or
+# filter-flagged — so takes-per-kept ratios have a denominator. Rows are
+# APPEND-ONLY: corrections are new rows with `supersedes`, never edits.
+# Full schema + vocabulary docs: db/ledger/README.md.
+
+LEDGER_DIR = DB_DIR / "ledger"
+GLOBAL_LEDGER = LEDGER_DIR / "_global.json"
+PROJECT_NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]*")
+GEN_ID_RE = re.compile(r"^(.+)-(\d{4})$")
+
+# Controlled vocabularies (extend via PR, never ad hoc — free-text tags
+# fragment and kill aggregation).
+SHOT_TAGS = {
+    "establishing", "dialogue-cu", "dialogue-multi", "action-melee",
+    "action-chase", "insert-prop", "vfx-event", "two-char",
+    "multi-char-3plus", "dual-instance", "pov", "environment-only",
+    "creature-occluded",
+}
+REJECT_REASONS = {
+    "identity-drift", "wardrobe-contamination", "extra-cuts",
+    "blocking-broken", "performance", "camera-wrong", "physics",
+    "text-render", "filter-flagged", "composition", "other",
+}
+# The split that carries the diagnostic value: structural rejections mean
+# "fix the prompt, don't re-roll"; stochastic mean "re-roll territory".
+# `other` belongs to neither class (counts in n only).
+STRUCTURAL_REASONS = {"identity-drift", "wardrobe-contamination", "extra-cuts",
+                      "blocking-broken", "text-render", "filter-flagged"}
+STOCHASTIC_REASONS = {"performance", "camera-wrong", "physics", "composition"}
+OUTCOMES = {"kept", "rejected", "flagged"}
+
+# Default planning ratios for budget estimates when the ledger has no usable
+# data for a tag (n<5 or kept=0). These are DEFAULTS, NOT DATA — the brief's
+# documented planning bands: 2-3:1 simple, 4-6:1 complex (midpoints used).
+DEFAULT_RATIOS = {
+    "establishing": 2.5, "dialogue-cu": 2.5, "insert-prop": 2.5,
+    "environment-only": 2.5, "pov": 2.5,
+    "dialogue-multi": 5.0, "action-melee": 5.0, "action-chase": 5.0,
+    "vfx-event": 5.0, "multi-char-3plus": 5.0, "dual-instance": 5.0,
+    "creature-occluded": 5.0,
+    "two-char": 3.0,
+}
+LOW_N_THRESHOLD = 5
+
+_LEDGER_REQUIRED = {"id", "ts", "model", "shot_tags", "outcome", "draft_tier"}
+_LEDGER_OPTIONAL = {"mode", "resolution", "aspect", "duration_s", "internal_cuts",
+                    "scene_ref", "prompt_hash", "credits", "notes",
+                    "supersedes", "reject_reason", "project"}
+
+
+def load_specs_models() -> dict:
+    """{id_or_alias: canonical_id} from specs/model-specs.json.
+
+    Ledger rows store CANONICAL ids only (aliases resolved at write time) so
+    per-model credit averages can't fragment across an alias. Returns {} when
+    the specs layer is missing — callers decide whether that's fatal."""
+    path = SCRIPT_DIR / "specs" / "model-specs.json"
+    try:
+        spec = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    mapping: dict = {}
+    for m in spec.get("models", []):
+        mapping[m["id"]] = m["id"]
+        for alias in m.get("aliases", []):
+            mapping[alias] = m["id"]
+    return mapping
+
+
+def ledger_path(project: str) -> Path:
+    if not PROJECT_NAME_RE.fullmatch(project):
+        print(json.dumps({"status": "error",
+                          "message": f"Invalid project name: {project!r} "
+                                     "(alphanumeric, dash, underscore)"}))
+        sys.exit(1)
+    return LEDGER_DIR / f"{project}.json"
+
+
+def load_ledger(path: Path) -> dict:
+    """Ledger file shape: {project, _last_updated, _total_rows, rows}.
+    A missing file is an empty ledger (projects bootstrap on first write)."""
+    try:
+        db = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {"project": path.stem, "rows": []}
+    except (OSError, json.JSONDecodeError) as e:
+        print(json.dumps({"status": "error",
+                          "message": f"Ledger file unreadable: {path}: {e}"}))
+        sys.exit(1)
+    if not isinstance(db, dict) or not isinstance(db.get("rows", []), list):
+        print(json.dumps({"status": "error",
+                          "message": f"Ledger file malformed (need dict with rows list): {path}"}))
+        sys.exit(1)
+    db.setdefault("project", path.stem)
+    db.setdefault("rows", [])
+    return db
+
+
+def save_ledger(path: Path, db: dict):
+    db["_last_updated"] = now_iso()
+    db["_total_rows"] = len(db["rows"])
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_suffix(".tmp")
+    try:
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(db, f, indent=2, ensure_ascii=False)
+        tmp_path.replace(path)
+    except OSError as e:
+        tmp_path.unlink(missing_ok=True)
+        print(json.dumps({"status": "error", "message": f"Failed to save ledger: {e}"}))
+        sys.exit(1)
+
+
+def next_gen_id(project: str, rows: list) -> str:
+    nums = []
+    for r in rows:
+        m = GEN_ID_RE.match(r.get("id", ""))
+        if m and m.group(1) == project:
+            nums.append(int(m.group(2)))
+    return f"{project}-{(max(nums) + 1) if nums else 1:04d}"
+
+
+def validate_ledger_row(row: dict, project: str, prior_ids: set,
+                        superseded_ids: set, model_ids: dict) -> list:
+    """Schema check for one row. Returns a list of problem strings.
+
+    `prior_ids` = ids of rows EARLIER in the same file (supersedes may only
+    point backward); `superseded_ids` = ids already masked by an earlier
+    row's supersedes (each id is maskable at most once — amend an amendment
+    by superseding the previous amendment, never the original twice)."""
+    problems = []
+    rid = row.get("id", "?")
+
+    missing = _LEDGER_REQUIRED - set(row)
+    if missing:
+        problems.append(f"{rid}: missing required field(s): {', '.join(sorted(missing))}")
+    unknown = set(row) - _LEDGER_REQUIRED - _LEDGER_OPTIONAL
+    if unknown:
+        problems.append(f"{rid}: unknown field(s): {', '.join(sorted(unknown))}")
+
+    m = GEN_ID_RE.match(str(row.get("id", "")))
+    if not m or m.group(1) != project:
+        problems.append(f"{rid}: id must match '{project}-NNNN'")
+
+    outcome = row.get("outcome")
+    if outcome not in OUTCOMES:
+        problems.append(f"{rid}: outcome must be one of {sorted(OUTCOMES)}, got {outcome!r}")
+
+    tags = row.get("shot_tags")
+    if not isinstance(tags, list):
+        problems.append(f"{rid}: shot_tags must be a list")
+    else:
+        bad = [t for t in tags if t not in SHOT_TAGS]
+        if bad:
+            problems.append(f"{rid}: shot_tags not in vocabulary: {', '.join(bad)} "
+                            f"(allowed: {', '.join(sorted(SHOT_TAGS))})")
+        lo = 0 if outcome == "flagged" else 1
+        if not lo <= len(tags) <= 3:
+            problems.append(f"{rid}: shot_tags needs {lo}..3 entries, got {len(tags)}")
+
+    model = row.get("model")
+    if model_ids:
+        if model not in model_ids:
+            problems.append(f"{rid}: model {model!r} not in specs/model-specs.json")
+        elif model_ids[model] != model:
+            problems.append(f"{rid}: model {model!r} is an alias — store the "
+                            f"canonical id {model_ids[model]!r}")
+
+    if outcome == "rejected":
+        reason = row.get("reject_reason")
+        if reason not in REJECT_REASONS:
+            problems.append(f"{rid}: rejected rows need reject_reason from "
+                            f"{', '.join(sorted(REJECT_REASONS))}; got {reason!r}")
+    elif row.get("reject_reason") is not None and outcome in OUTCOMES:
+        problems.append(f"{rid}: reject_reason only belongs on rejected rows")
+
+    if not isinstance(row.get("draft_tier"), bool):
+        problems.append(f"{rid}: draft_tier must be true/false")
+
+    sup = row.get("supersedes")
+    if sup is not None:
+        if sup not in prior_ids:
+            problems.append(f"{rid}: supersedes {sup!r} — no earlier row with that "
+                            "id in this ledger (corrections point backward, same file)")
+        elif sup in superseded_ids:
+            problems.append(f"{rid}: supersedes {sup!r} which is already superseded — "
+                            "amend the latest amendment instead")
+    return problems
+
+
+def resolve_effective(rows: list) -> list:
+    """Append-only resolution: a row referenced by any supersedes is masked."""
+    masked = {r.get("supersedes") for r in rows if r.get("supersedes")}
+    return [r for r in rows if r.get("id") not in masked]
+
+
+def project_ledger_files() -> list:
+    """All real project ledgers. Underscore-prefixed names are reserved
+    (_global generated view, _demo test fixture) and excluded."""
+    if not LEDGER_DIR.is_dir():
+        return []
+    return sorted(p for p in LEDGER_DIR.glob("*.json")
+                  if not p.name.startswith("_"))
+
+
+def build_global() -> dict:
+    """The _global.json view: raw rows from every project ledger, each
+    annotated with its project. Generated, never hand-written; consumers
+    re-run supersedes resolution (ids are project-prefixed, so masks
+    cannot cross projects). Deterministic: filename order, then file order."""
+    rows = []
+    sources = []
+    for path in project_ledger_files():
+        db = load_ledger(path)
+        sources.append(path.name)
+        for r in db["rows"]:
+            rows.append({**r, "project": db["project"]})
+    return {
+        "_generated": "by higgsfield_memory.py — DO NOT HAND-EDIT; "
+                      "underscore-prefixed ledgers are excluded by design",
+        "generated_from": sources,
+        "_total_rows": len(rows),
+        "rows": rows,
+    }
+
+
+def write_global():
+    fresh = build_global()
+    LEDGER_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = GLOBAL_LEDGER.with_suffix(".tmp")
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(fresh, f, indent=2, ensure_ascii=False)
+        tmp.replace(GLOBAL_LEDGER)
+    except OSError as e:
+        tmp.unlink(missing_ok=True)
+        print(json.dumps({"status": "error", "message": f"Failed to write _global: {e}"}))
+        sys.exit(1)
+
 # ── Commands ───────────────────────────────────────────────────────────────────
 
 def add_filter(entry_json: str):
