@@ -42,7 +42,7 @@ DejaVu Sans **Condensed** keeps drift at 0.6-2.8% on real text content
 overflow; the 71-char ceiling in `validate_user_guide.py` stays valid.
 Same Unicode coverage as DV regular; close-to-Helvetica metrics.
 
-Full measurement trail: `../../.planning/v3.7.14/PHASE-0-VERIFICATION.md`.
+Full measurement trail: the v3.7.14 Phase 0 verification notes (internal build notes).
 
 ## Why DejaVu Sans Mono (v3.7.16)
 
@@ -53,7 +53,7 @@ Phase 0 measurement: 0.33% max glyph-width drift vs. Courier on real
 code-block samples (well under the 5% threshold inherited from v3.7.14).
 Only the regular weight is bundled — `code_block` invokes a single
 `set_font("Mono", "", 9)` call site; no bold/oblique weight is reached.
-Full measurement trail: `../../.planning/v3.7.16/PHASE-0-VERIFICATION.md`
+Full measurement trail: the v3.7.16 Phase 0 verification notes (internal build notes)
 §VERIFY 0.4.
 
 ## Why bundled in-repo, not system-installed
