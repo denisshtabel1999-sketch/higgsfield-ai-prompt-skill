@@ -764,6 +764,7 @@ anchors instead of archaeology. Link format: `path#anchor`.
     - [Diagnostic Flowchart](skills/higgsfield-troubleshoot/SKILL.md#diagnostic-flowchart)
     - [Success Rate Note](skills/higgsfield-troubleshoot/SKILL.md#success-rate-note)
   - [Log the Outcome — Always](skills/higgsfield-troubleshoot/SKILL.md#log-the-outcome-always)
+  - [Vision-Grounded Diagnosis — Classify the Rejected Still, Don't Guess](skills/higgsfield-troubleshoot/SKILL.md#vision-grounded-diagnosis-classify-the-rejected-still-dont-guess)
   - [Related skills](skills/higgsfield-troubleshoot/SKILL.md#related-skills)
 
 ## skills/higgsfield-vibe-motion/SKILL.md

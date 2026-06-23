@@ -368,3 +368,73 @@ def test_flag_b_respects_supersedes():
                  "supersedes": "p-0000"})
     # cluster now has a keeper among effective rows → silent
     assert hm.wasted_reroll_flags(rows) == []
+
+
+# ── Wave B: vision_reason + vision/human agreement ───────────────────────────
+
+def _diag(i, reason, vision, outcome="rejected"):
+    """A row carrying a human reject_reason and/or a proposed vision_reason."""
+    r = {"id": f"p-{i:04d}", "ts": "t", "model": "seedance_2_0",
+         "shot_tags": ["action-melee"], "draft_tier": False, "outcome": outcome}
+    if reason:
+        r["reject_reason"] = reason
+    if vision:
+        r["vision_reason"] = vision
+    return r
+
+
+def test_vision_reason_validation():
+    base = {"id": "_demo-0001", "ts": "t", "model": "seedance_2_0",
+            "shot_tags": ["pov"], "outcome": "kept", "draft_tier": False}
+    ids = model_ids()
+    assert hm.validate_ledger_row(base, "_demo", set(), set(), ids) == []  # absent ok
+    assert hm.validate_ledger_row({**base, "vision_reason": "physics"},
+                                  "_demo", set(), set(), ids) == []
+    bad = hm.validate_ledger_row({**base, "vision_reason": "warped-hand"},
+                                 "_demo", set(), set(), ids)
+    assert any("vision_reason must be a reject_reason" in p for p in bad)
+
+
+def test_agreement_trusts_a_high_agreement_class_above_min_n():
+    # 8 paired physics rows, 7 match → 87.5% ≥ 80% over ≥ 8 → trusted
+    rows = [_diag(i, "physics", "physics") for i in range(7)]
+    rows.append(_diag(7, "physics", "composition"))  # one miss
+    c = hm.compute_vision_agreement(rows)["classes"][0]
+    assert c["n"] == 8 and c["matches"] == 7
+    assert math.isclose(c["agreement"], 7 / 8)
+    assert c["trusted"] is True and c["low_n"] is False
+
+
+def test_agreement_low_n_is_not_trusted():
+    rows = [_diag(i, "composition", "composition") for i in range(3)]
+    c = hm.compute_vision_agreement(rows)["classes"][0]
+    assert c["low_n"] is True and c["trusted"] is False
+
+
+def test_agreement_high_rate_but_below_min_n_not_trusted():
+    # perfect agreement but only 4 rows → below VISION_AGREEMENT_MIN_N → not trusted
+    rows = [_diag(i, "physics", "physics") for i in range(4)]
+    c = hm.compute_vision_agreement(rows)["classes"][0]
+    assert math.isclose(c["agreement"], 1.0) and c["trusted"] is False
+
+
+def test_agreement_excludes_unpaired_rows():
+    # vision proposed but no human reject_reason (kept row) → diagnosed, not paired
+    rows = [_diag(0, None, "physics", outcome="kept")]
+    ag = hm.compute_vision_agreement(rows)
+    assert ag["n_paired"] == 0 and ag["n_diagnosed"] == 1 and ag["classes"] == []
+
+
+def test_agreement_respects_supersedes():
+    # original physics/physics match superseded by a corrected physics/composition miss
+    rows = [_diag(i, "physics", "physics") for i in range(8)]
+    rows.append({**_diag(99, "physics", "composition"), "supersedes": "p-0000"})
+    c = hm.compute_vision_agreement(rows)["classes"][0]
+    # 8 effective rows (0000 masked, 0099 added): 7 match → still trusted, miss counted
+    assert c["n"] == 8 and c["matches"] == 7
+
+
+def test_agreement_cli_renders():
+    rows = [_diag(i, "physics", "physics") for i in range(8)]
+    text = hm.render_agreement("_demo", hm.compute_vision_agreement(rows))
+    assert "physics" in text and "100%" in text and "yes" in text

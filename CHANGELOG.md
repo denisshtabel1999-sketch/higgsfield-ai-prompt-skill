@@ -1,5 +1,15 @@
 # Changelog
 
+## v3.13.0 — 2026-06-22
+
+Wave B of the framework-improvement series — **vision-grounded diagnosis**, the accuracy backstop for Wave A's iterate-vs-batch fork. The fork is only as honest as the `reject_reason` labels feeding it, and those are logged from human memory ("face drifted") — hearsay. When the rejected output is in hand, classify it from the frame instead. v1 is **stills-only** (image or a single user-picked frame); full-clip motion classification is deliberately out of scope.
+
+- **New optional ledger fields `vision_reason` + `vision_evidence`.** `vision_reason` (same enum as `reject_reason`, or absent) holds the reason a vision pass *proposed*; `vision_evidence` is a one-line note of what it saw. **`reject_reason` stays the human-confirmed verdict** — vision is advisory and never auto-writes the field the fork reads (the same discipline as Flag A and the killed reject-reconstruction). Validated in `validate_ledger_row`; logged via `log-gen --vision-reason / --vision-evidence`.
+- **`agreement` command + `compute_vision_agreement()`** — measure the classifier before trusting it. Per `reject_reason` class, agreement = rows where `vision_reason == reject_reason` ÷ rows carrying both. A class is `trusted` (vision may be logged without human confirmation) only at ≥ `VISION_TRUST_MIN_AGREEMENT` (0.8) over ≥ `VISION_AGREEMENT_MIN_N` (8) confirmed diagnoses — its own low-n guard. Rows diagnosed by vision but never human-confirmed count as `diagnosed`, never as agreement either way. Until a class clears the gate, a human confirms every proposal.
+- **`higgsfield-troubleshoot` § Vision-Grounded Diagnosis** — the opt-in capture → classify → confirm → log chain, with the vision-observed → `reject_reason` mapping table. No-clean-home failures (warped hand, FPS drift) route to `other` + evidence note, never force-fit; if the `other` pile grows, that data justifies a later enum-extension PR. Capture uses `media_import_url` (web URL) / upload widget (local) / direct read (local image), since outputs aren't auto-saved. Mirrored into `higgsfield-recall` and `DISCIPLINE.md`.
+- **Implementation note:** delivered by extending `higgsfield-troubleshoot` + `higgsfield-recall` rather than adding a 28th sub-skill — keeps the dispatcher tight (the item-6 "prune the long tail" instinct) since troubleshoot already owns failure diagnosis and feeds the recall DBs.
+- 7 new pytest cases (vision_reason validation; agreement trust gate, low-n, below-min-n, unpaired exclusion, supersedes, CLI render). `db/ledger/README.md` documents `vision_reason` + the gate.
+
 ## v3.12.1 — 2026-06-22
 
 Flag B — the wasted-re-roll detector — completes Wave A (the fast-follow promised in v3.12.0, held until item 1's batch semantics were live). Stacked on v3.12.0.
