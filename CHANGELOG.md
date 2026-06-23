@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.15.1 — 2026-06-22
+
+Post-series hygiene: activation docs, a privacy scrub, and a clean Problems panel.
+
+- **README § Maintenance** documents the two one-time activation steps the series left dormant: adding the `HIGGSFIELD_CREDENTIALS` secret to turn on the scheduled spec-drift check, and letting `log-route` routing data accumulate before pruning the long tail. Notes that credentials live only in the GitHub secret, never committed.
+- **Privacy scrub:** removed absolute home-path PII (`/Users/<user>/...`, 5 occurrences) from `.planning/v3.7.16/PHASE-0-VERIFICATION.md` → `~`. Security pass otherwise clean: no tokens/credentials in the tree or git history, `specs/cli_baseline.json` is public model schema only, `workspace/` content is gitignored.
+- **markdownlint hygiene:** extended `.markdownlint.json` to opt out of the remaining cosmetic rules firing on long historical docs (MD012/MD031/MD038/MD040/MD041), consistent with the existing MD013/MD022/MD032/MD060 opt-outs. No code/CI behavior change; `validate.py --strict` and the eval suite are unaffected.
+
 ## v3.15.0 — 2026-06-22
 
 Finale of the framework-improvement series — the two remaining closers: Wave C's **scheduling wrapper** and **item 6's routing-telemetry surface**.

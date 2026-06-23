@@ -19,7 +19,7 @@ Architectural option (α/β/γ) analysis surfaced in §VERIFY 0.3 + the dedicate
 
 ## VERIFY 0.1 — gpt-image-2-director source read
 
-**Path verification:** Source file lives at `/Users/petercsanky/Desktop/EVEN MORE SKILLS/gpt-image-2-director/SKILL.md` (NOT in `MORE CUSTOM SKILLS/` as the kickoff prompt hypothesized — re-confirms the v3.7.13 audit-note "filed for Phase 2C-mini, never executed" was working from a wrong path assumption). 13,949 bytes / 206 lines.
+**Path verification:** Source file lives at `~/Desktop/EVEN MORE SKILLS/gpt-image-2-director/SKILL.md` (NOT in `MORE CUSTOM SKILLS/` as the kickoff prompt hypothesized — re-confirms the v3.7.13 audit-note "filed for Phase 2C-mini, never executed" was working from a wrong path assumption). 13,949 bytes / 206 lines.
 
 ### 0.1a — Document structure
 
@@ -116,7 +116,7 @@ Both examples are pedagogical artifacts. Translation handling: adopt as illustra
 
 ## VERIFY 0.2 — static-ads.md source read
 
-**Path verification:** `/Users/petercsanky/Desktop/EVEN MORE SKILLS/MORE CUSTOM SKILLS/static-ads.md` confirmed at expected location. 20,496 bytes / 316 lines (largest of the three new-content sources).
+**Path verification:** `~/Desktop/EVEN MORE SKILLS/MORE CUSTOM SKILLS/static-ads.md` confirmed at expected location. 20,496 bytes / 316 lines (largest of the three new-content sources).
 
 ### 0.2a — Document structure
 
@@ -206,7 +206,7 @@ Each template is a single flowing paragraph (matches gpt-image-2-director's Form
 
 ### 0.3a — Existing ms_image coverage in higgsfield-marketing-studio
 
-Re-read of `/Users/petercsanky/Projects/higgsfield/skills/higgsfield-marketing-studio/SKILL.md` (672 lines) + `cross-surface-workflow.md` (428 lines):
+Re-read of `~/Projects/higgsfield/skills/higgsfield-marketing-studio/SKILL.md` (672 lines) + `cross-surface-workflow.md` (428 lines):
 
 | Site | Coverage |
 |---|---|
@@ -222,8 +222,8 @@ Re-read of `/Users/petercsanky/Projects/higgsfield/skills/higgsfield-marketing-s
 
 ```
 $ grep -nEi "ms_image|dtc ads|dtc_ads|marketing_studio_image" \
-    "/Users/petercsanky/Desktop/EVEN MORE SKILLS/marketing-studio-director/SKILL.md" \
-    "/Users/petercsanky/Desktop/EVEN MORE SKILLS/higgsfield-content-factory/SKILL.md"
+    "~/Desktop/EVEN MORE SKILLS/marketing-studio-director/SKILL.md" \
+    "~/Desktop/EVEN MORE SKILLS/higgsfield-content-factory/SKILL.md"
 
 (no output — ZERO matches across both files)
 ```
