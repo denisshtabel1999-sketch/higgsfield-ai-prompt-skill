@@ -38,6 +38,8 @@ Underscore-prefixed names are **reserved**.
   "scene_ref": "S14-P2",              // optional free text
   "prompt_hash": "a1b2c3d4e5f6",      // optional sha1[:12] — dedupe identical re-rolls
   "prompt_method": "mcsla",           // optional control arm: quick | mcsla; absent = unlabeled
+  "vision_reason": "physics",         // optional: reject_reason a vision pass PROPOSED (advisory)
+  "vision_evidence": "warped hand",   // optional: one-line note of what vision saw
   "draft_tier": false,                // 480p exploration rolls; excluded from headline ratios
   "outcome": "kept",                  // kept | rejected | flagged
   "reject_reason": null,              // controlled vocab, REQUIRED iff rejected
@@ -128,3 +130,20 @@ is *measured*, not asserted. The field is **optional with no default**: rows
 logged before it existed (or left unlabeled) are **excluded** from the A/B —
 never bucketed into an arm — so legacy history can't masquerade as a control.
 Compare only matched shot classes (`ab <project> --tag <shot_tag>`).
+
+## `vision_reason` — grounding the label in what the frame showed
+
+The `reject_reason` that drives the fork is only as honest as the human's memory
+("face drifted" → `identity-drift`). A vision pass over the rejected still can
+*propose* a `reject_reason` from what it actually saw. That proposal lands in
+`vision_reason` (same enum, or absent) with a one-line `vision_evidence` note;
+**`reject_reason` stays the human-confirmed verdict** — vision is advisory and
+never auto-writes the field the fork reads.
+
+To know when vision is trustworthy, the `agreement` command measures it: per
+`reject_reason` class, agreement = rows where `vision_reason == reject_reason` ÷
+rows carrying both. A class is **trusted** (vision may be logged without
+human confirmation) only at ≥ `VISION_TRUST_MIN_AGREEMENT` over ≥
+`VISION_AGREEMENT_MIN_N` confirmed diagnoses — its own low-n guard. Measure
+before trusting; until a class clears the gate, a human confirms every proposal.
+See `skills/higgsfield-troubleshoot` § Vision-Grounded Diagnosis.

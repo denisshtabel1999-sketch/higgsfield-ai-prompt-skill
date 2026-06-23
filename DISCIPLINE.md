@@ -175,6 +175,29 @@ history to read the verdict.
 Iterate + § Batch-and-Select; `higgsfield_memory.py` `compute_ratio` /
 `fork_verdict`; `db/ledger/README.md` § The fork.
 
+### Vision-Grounded Diagnosis (the fork's accuracy backstop)
+
+The iterate-vs-batch fork is only as honest as the `reject_reason`
+labels feeding it, and those are logged from human memory ("face
+drifted") — hearsay, not evidence. When the rejected output is in
+hand, classify it from the frame: a vision pass *proposes* a
+`reject_reason` from what it actually saw. Two disciplines keep this
+honest. **Advisory, not authoritative** — vision proposes, the human
+confirms the verdict the fork reads; an unsupervised classifier never
+silently steers the fracs (the same rule that made Flag A and the
+killed reject-reconstruction advisory). **Measure before trusting** —
+per-class agreement between proposal and confirmed label is tracked,
+and vision is trusted without confirmation only once a class clears a
+falsifiable gate. The tool applies its own prove-it-don't-assert-it
+discipline to itself.
+
+**When to apply:** Diagnosing a rejected still (image or single frame)
+you can actually see; opt-in, not every log.
+
+**Demonstrated in:** `skills/higgsfield-troubleshoot/SKILL.md` §
+Vision-Grounded Diagnosis; `higgsfield_memory.py`
+`compute_vision_agreement`; `db/ledger/README.md` § `vision_reason`.
+
 ### BAD/GOOD/GREAT
 
 Show output gradients explicitly — BAD, GOOD, GREAT examples

@@ -23,6 +23,7 @@ Generation ledger (db/ledger/ — see db/ledger/README.md):
   python higgsfield_memory.py amend-gen <id> outcome=kept   # superseding row
   python higgsfield_memory.py ratio <project> [--model X] [--tag Y] [--global] [--credits]
   python higgsfield_memory.py ab <project> [--tag Y] [--global]   # prompt_method A/B
+  python higgsfield_memory.py agreement <project> [--global]   # vision/human agreement
   python higgsfield_memory.py budget <project> --shots <manifest.json|csv>
 
 Per-project namespacing:
@@ -203,11 +204,19 @@ LOW_N_THRESHOLD = 5
 # all-structural, no-keeper cluster is called a wasted re-roll. Its own knob —
 # a different concept from the ratio low-n guard, tuned independently.
 WASTED_REROLL_MIN = 5
+# Wave B (vision-grounded diagnosis): promotion gate for trusting a
+# vision-proposed reject_reason WITHOUT human confirmation. Per reject_reason
+# class, vision is trusted only once its agreement with confirmed human labels
+# clears VISION_TRUST_MIN_AGREEMENT over at least VISION_AGREEMENT_MIN_N
+# confirmed diagnoses (its own low-n guard — measure before trusting).
+VISION_TRUST_MIN_AGREEMENT = 0.8
+VISION_AGREEMENT_MIN_N = 8
 
 _LEDGER_REQUIRED = {"id", "ts", "model", "shot_tags", "outcome", "draft_tier"}
 _LEDGER_OPTIONAL = {"mode", "resolution", "aspect", "duration_s", "internal_cuts",
                     "scene_ref", "prompt_hash", "credits", "notes",
-                    "supersedes", "reject_reason", "project", "prompt_method"}
+                    "supersedes", "reject_reason", "project", "prompt_method",
+                    "vision_reason", "vision_evidence"}
 
 
 def load_specs_models() -> dict:
@@ -343,6 +352,11 @@ def validate_ledger_row(row: dict, project: str, prior_ids: set,
     if pm is not None and pm not in PROMPT_METHODS:
         problems.append(f"{rid}: prompt_method must be one of "
                         f"{sorted(PROMPT_METHODS)} or absent (unlabeled); got {pm!r}")
+
+    vr = row.get("vision_reason")
+    if vr is not None and vr not in REJECT_REASONS:
+        problems.append(f"{rid}: vision_reason must be a reject_reason value "
+                        f"or absent; got {vr!r}")
 
     sup = row.get("supersedes")
     if sup is not None:
@@ -594,6 +608,48 @@ def compute_method_ab(rows: list, tag: str = None) -> dict:
     }
 
 
+def compute_vision_agreement(rows: list, min_n: int = VISION_AGREEMENT_MIN_N) -> dict:
+    """Wave B: how often vision's proposed reason matched the human-confirmed
+    reject_reason, per class (pure). Measures the classifier before we trust it.
+
+    Only rows carrying BOTH a confirmed `reject_reason` and a proposed
+    `vision_reason` count — a row diagnosed by vision but never human-confirmed
+    isn't evidence of agreement either way. Per confirmed-reason class:
+    agreement = matches / both-present. A class is `trusted` (vision may be
+    logged without confirmation) only at >= VISION_TRUST_MIN_AGREEMENT over
+    >= min_n diagnoses — its own low-n guard, so we never promote on a handful.
+    `reject_reason` stays the verdict regardless; this only governs how much the
+    human has to confirm."""
+    eff = resolve_effective(rows)
+    paired = [r for r in eff
+              if r.get("reject_reason") in REJECT_REASONS
+              and r.get("vision_reason") in REJECT_REASONS]
+
+    classes = {}
+    for r in paired:
+        classes.setdefault(r["reject_reason"], []).append(r)
+
+    out = []
+    for reason, members in sorted(classes.items(),
+                                  key=lambda kv: (-len(kv[1]), kv[0])):
+        n = len(members)
+        matches = sum(1 for r in members if r["vision_reason"] == r["reject_reason"])
+        rate = matches / n
+        out.append({
+            "reject_reason": reason,
+            "n": n,
+            "matches": matches,
+            "agreement": rate,
+            "low_n": n < min_n,
+            "trusted": (n >= min_n and rate >= VISION_TRUST_MIN_AGREEMENT),
+        })
+    return {
+        "classes": out,
+        "n_paired": len(paired),
+        "n_diagnosed": sum(1 for r in eff if r.get("vision_reason") in REJECT_REASONS),
+    }
+
+
 _CONFIDENCE_RANK = {"project-data": 0, "global-data": 1, "default": 2}
 
 
@@ -735,6 +791,13 @@ def _parse_log_gen_args(argv: list):
     p.add_argument("--method", choices=sorted(PROMPT_METHODS),
                    help="prompt_method control arm (quick | mcsla); omit to leave "
                         "unlabeled and out of the A/B")
+    p.add_argument("--vision-reason", dest="vision_reason",
+                   choices=sorted(REJECT_REASONS),
+                   help="reject_reason a vision pass PROPOSED (advisory); the human "
+                        "still sets --reason. Feeds the agreement gate.")
+    p.add_argument("--vision-evidence", dest="vision_evidence",
+                   help="one-line note of what vision saw (e.g. 'warped left hand, "
+                        "center frame')")
     return p.parse_args(argv)
 
 
@@ -765,6 +828,8 @@ def cmd_log_gen(argv: list):
             "prompt_hash": (hashlib.sha1(args.prompt.strip().encode("utf-8"))
                             .hexdigest()[:12] if args.prompt else None),
             "prompt_method": args.method,
+            "vision_reason": args.vision_reason,
+            "vision_evidence": args.vision_evidence,
         }
     try:
         row = log_gen_row(args.project, fields)
@@ -904,6 +969,51 @@ def cmd_ab(argv: list):
     else:
         p.error("need a project name or --global")
     print(render_method_ab(label, compute_method_ab(rows, tag=args.tag)))
+
+
+def render_agreement(label: str, result: dict) -> str:
+    lines = [f"{label.upper()} — vision/human agreement "
+             f"(paired={result['n_paired']}, diagnosed={result['n_diagnosed']})"]
+    if not result["classes"]:
+        lines.append("  (no rows carry both a confirmed reject_reason and a "
+                     "vision_reason yet — log diagnoses with --vision-reason)")
+    else:
+        lines.append(f"{'reject_reason':<22} {'n':<4} {'match':<6} "
+                     f"{'agreement':<10} {'trusted':<8}")
+        for c in result["classes"]:
+            agree = f"{round(100 * c['agreement'])}%"
+            trusted = "yes" if c["trusted"] else ("low-n" if c["low_n"] else "no")
+            lines.append(f"{c['reject_reason']:<22} {c['n']:<4} {c['matches']:<6} "
+                         f"{agree:<10} {trusted:<8}")
+    lines.append(f'Trusted = vision agrees >= {round(100 * VISION_TRUST_MIN_AGREEMENT)}% '
+                 f'over >= {VISION_AGREEMENT_MIN_N} confirmed diagnoses; until then '
+                 'a human confirms every vision_reason.')
+    return "\n".join(lines)
+
+
+def cmd_agreement(argv: list):
+    import argparse
+    p = argparse.ArgumentParser(
+        prog="higgsfield_memory.py agreement",
+        description="Vision/human label agreement per reject_reason class — "
+                    "measures the vision classifier before it is trusted.")
+    p.add_argument("project", nargs="?", help="project ledger (omit with --global)")
+    p.add_argument("--global", dest="global_view", action="store_true",
+                   help="aggregate across all (non-underscore) projects")
+    args = p.parse_args(argv)
+    if args.global_view:
+        rows = load_ledger(GLOBAL_LEDGER)["rows"]
+        label = "global"
+    elif args.project:
+        if re.fullmatch(r"_?[A-Za-z0-9][A-Za-z0-9_-]*", args.project):
+            path = LEDGER_DIR / f"{args.project}.json"
+        else:
+            path = ledger_path(args.project)
+        rows = load_ledger(path)["rows"]
+        label = args.project
+    else:
+        p.error("need a project name or --global")
+    print(render_agreement(label, compute_vision_agreement(rows)))
 
 
 def _load_shot_manifest(path: Path) -> list:
@@ -1379,6 +1489,8 @@ if __name__ == "__main__":
         cmd_ratio(sys.argv[2:])
     elif cmd == "ab":
         cmd_ab(sys.argv[2:])
+    elif cmd == "agreement":
+        cmd_agreement(sys.argv[2:])
     elif cmd == "budget":
         cmd_budget(sys.argv[2:])
     elif cmd == "last-gen" and len(sys.argv) >= 3:

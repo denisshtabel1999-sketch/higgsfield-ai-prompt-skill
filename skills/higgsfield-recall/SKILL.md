@@ -219,7 +219,10 @@ prints a per-shot-tag **verdict** that decides iterate-vs-batch:
 A ⚠ plausibility line means a tag is beating its planning default by a wide
 margin — *either* real lift *or* under-logged failures; surface it, let the
 user decide. The verdict is only as good as the `reject_reason` labels, so map
-the user's words to vocab honestly.
+the user's words to vocab honestly — and when the rejected output is in hand,
+classify it from the frame instead of from memory (`higgsfield-troubleshoot` §
+Vision-Grounded Diagnosis logs a `--vision-reason` alongside the human verdict,
+advisory until the `agreement` command proves it).
 
 ---
 
