@@ -1,4 +1,4 @@
-[![Version](https://img.shields.io/badge/version-3.15.0-blue)](https://github.com/OSideMedia/higgsfield-ai-prompt-skill)
+[![Version](https://img.shields.io/badge/version-3.15.1-blue)](https://github.com/OSideMedia/higgsfield-ai-prompt-skill)
 [![Specs snapshot](https://img.shields.io/badge/specs%20snapshot-2026--06--22-informational)](specs/MODEL-SPECS.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Claude%20Cowork%20%7C%20Claude%20Code-purple)](https://github.com/OSideMedia/higgsfield-ai-prompt-skill)
@@ -263,6 +263,43 @@ Tags and reject reasons come from controlled vocabularies (`db/ledger/README.md`
 rows are append-only with superseding corrections; `ratio` splits structural vs
 stochastic rejections and flags `low-n` rows instead of faking precision.
 
+## Maintenance — two activation steps
+
+Two capabilities ship **inactive on purpose** and need a one-time setup.
+
+### 1. Activate the scheduled spec-drift check
+
+`.github/workflows/spec-drift.yml` runs `refresh_specs.py` weekly to catch when
+Higgsfield changes a model's lineup or capabilities before the 30-day staleness
+warning would. It ships **dormant** until you give it the Higgsfield CLI
+credentials as a repo secret:
+
+```bash
+higgsfield auth login                 # if not already authenticated locally
+gh secret set HIGGSFIELD_CREDENTIALS < ~/.config/higgsfield/credentials.json
+```
+
+Then run it once manually (Actions tab → **spec-drift** → *Run workflow*) to
+confirm the CLI-install step resolves on the runner. After that it's automatic:
+**fresh** → nothing; **drift** → it opens/updates a GitHub issue with next steps;
+**auth expired** → the job fails so GitHub notifies you to re-run
+`higgsfield auth login` and refresh the secret. The credentials live only in the
+GitHub secret — they are never committed.
+
+### 2. Let routing telemetry accumulate before pruning
+
+`log-route` / `routing` (in `higgsfield_memory.py`) record which sub-skills each
+request opens, so "which skills are load-bearing, which to retire" becomes a
+data question:
+
+```bash
+python3 higgsfield_memory.py log-route --skills higgsfield-prompt,higgsfield-camera
+python3 higgsfield_memory.py routing     # ranks opens, lists the never-opened tail
+```
+
+This is **instrumentation, not a verdict** — let real requests accumulate before
+acting on the tail. A small sample is not evidence a skill is dead.
+
 ## Example Prompts
 
 **Basic:**
@@ -292,4 +329,4 @@ stochastic rejections and flags `low-n` rows instead of faking precision.
 
 ---
 
-Built February 2026 · v3.15.0 (updated 2026-06-22) · Platform: [higgsfield.ai](https://higgsfield.ai)
+Built February 2026 · v3.15.1 (updated 2026-06-22) · Platform: [higgsfield.ai](https://higgsfield.ai)
