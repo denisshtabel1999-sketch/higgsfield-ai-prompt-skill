@@ -199,6 +199,10 @@ DEFAULT_RATIOS = {
     "two-char": 3.0,
 }
 LOW_N_THRESHOLD = 5
+# Flag B (wasted-re-roll): minimum identical-prompt_hash cluster size before an
+# all-structural, no-keeper cluster is called a wasted re-roll. Its own knob —
+# a different concept from the ratio low-n guard, tuned independently.
+WASTED_REROLL_MIN = 5
 
 _LEDGER_REQUIRED = {"id", "ts", "model", "shot_tags", "outcome", "draft_tier"}
 _LEDGER_OPTIONAL = {"mode", "resolution", "aspect", "duration_s", "internal_cuts",
@@ -513,6 +517,46 @@ def plausibility_flags(groups: list) -> list:
     return out
 
 
+def wasted_reroll_flags(rows: list, min_cluster: int = WASTED_REROLL_MIN) -> list:
+    """Flag B — wasted-re-roll detector (pure, advisory).
+
+    A prompt_hash cluster (identical prompt, re-rolled) with >= min_cluster
+    STRUCTURAL rejects and ZERO kept rows is someone re-rolling the dice on a
+    prompt that needs a rewrite — burning credits on the same systematic failure.
+
+    The discriminator is KEEPER-PRESENCE, not reason-class. A legitimate
+    variance-harvest batch (item 1: same locked prompt, N rolls) also forms a
+    repeated-hash cluster that can contain structural rejects — identity-drift on
+    roll 7 of 10 is structural yet one-off — so reason-class alone would
+    false-fire on exactly the hardest, most-batched shots. But a harvest contains
+    at least one KEEPER, which proves the prompt works. No keeper + an
+    all-structural pile = the prompt is broken, and that distinction is only
+    sound once item 1's batch semantics are live. Operates on effective
+    (supersedes-resolved) rows; clusters without a prompt_hash are unjudgeable."""
+    eff = resolve_effective(rows)
+    clusters = {}
+    for r in eff:
+        h = r.get("prompt_hash")
+        if h:
+            clusters.setdefault(h, []).append(r)
+
+    out = []
+    for h, members in sorted(clusters.items()):
+        if any(r.get("outcome") == "kept" for r in members):
+            continue  # a keeper proves the prompt works — legitimate harvest
+        structural = sum(1 for r in members if _is_structural(r))
+        if structural < min_cluster:
+            continue
+        tags = sorted({t for r in members for t in r.get("shot_tags", [])})
+        tag_str = ", ".join(tags) if tags else "untagged"
+        out.append(
+            f"⚠ wasted re-roll: prompt_hash {h} rolled {len(members)}× — "
+            f"{structural} structural reject(s), no keeper ({tag_str}). You're "
+            f"re-rolling a prompt that needs a rewrite, not better dice. Stop "
+            f"and fix the prompt (single-variable iteration).")
+    return out
+
+
 def compute_method_ab(rows: list, tag: str = None) -> dict:
     """Item 3 control arm: takes-per-kept split by prompt_method (pure).
 
@@ -804,6 +848,10 @@ def cmd_ratio(argv: list):
         p.error("need a project name or --global")
     result = compute_ratio(rows, model=args.model, tag=args.tag)
     print(render_ratio(label, result, credits_mode=args.credits))
+    # Flag B runs on the full (unfiltered) scope — re-roll clusters span the
+    # whole ledger, independent of the --model/--tag display filters.
+    for flag in wasted_reroll_flags(rows):
+        print(flag)
 
 
 def render_method_ab(label: str, result: dict) -> str:
