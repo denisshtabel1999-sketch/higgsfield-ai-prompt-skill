@@ -101,10 +101,10 @@
     },
     {
       "id": "trap-cs-quality-enum",
-      "description": "STALE-SPEC TRAP — a 4K quality claim for Seedance output must be flagged",
+      "description": "STALE-SPEC TRAP — Seedance 2.0 4K is legal only in std mode; a 4K claim under fast mode must be flagged",
       "model": "seedance_2_0",
-      "request": "(trap) header claiming a resolution outside the Seedance enum",
-      "response": "**Model**: Seedance 2.0\n**Aspect ratio**: 16:9  **Duration**: 8s\n**Resolution**: 4k  **Mode**: std\n\nDust motes drift through a projector beam in an empty cinema. Static medium.",
+      "request": "(trap) header claiming 4K under Seedance fast mode, which caps at 480p/720p",
+      "response": "**Model**: Seedance 2.0\n**Aspect ratio**: 16:9  **Duration**: 8s\n**Resolution**: 4k  **Mode**: fast\n\nDust motes drift through a projector beam in an empty cinema. Static medium.",
       "assertions": [
         {"type": "enum_legal", "expect": "illegal"}
       ]

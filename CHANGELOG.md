@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.11.2 — 2026-06-22
+
+Fix red CI: the `[higgsfield-cinema] trap-cs-quality-enum` eval went stale when v3.11.0 added 4K to Seedance 2.0.
+
+- **Eval fix:** the trap fed `Resolution: 4k` + `Mode: std`, expecting it to be flagged illegal — but the June refresh made 4K-at-std **legal** (`mode=fast` is the only thing that forbids 1080p/4k). The checker correctly flagged nothing, so the trap failed to fire and CI went red on the v3.11.0 and v3.11.1 merges. Updated the case to test the genuinely-illegal combo the refresh introduced — `4k` under `Mode: fast` — restoring it to a meaningful trap. Eval suite back to 40/40.
+
 ## v3.11.1 — 2026-06-22
 
 Routing disambiguation between `higgsfield-vibe-motion` and the new `higgsfield-motion-design` (both legitimately trigger on "motion graphics / brand / logo animation").
