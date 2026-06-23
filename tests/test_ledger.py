@@ -308,3 +308,63 @@ def test_method_ab_excludes_unlabeled():
     assert by["mcsla"]["n"] == 2 and by["mcsla"]["kept"] == 2
     # matched-class filter
     assert hm.compute_method_ab(rows, tag="dialogue-cu")["n_labeled"] == 0
+
+
+# ── Flag B (PR 2): wasted-re-roll detector ───────────────────────────────────
+
+def _cluster(h, outcomes, tag="action-melee"):
+    """Rows sharing one prompt_hash. outcomes: list of 'kept' or reject_reason."""
+    rows = []
+    for i, o in enumerate(outcomes):
+        r = {"id": f"p-{i:04d}", "ts": "t", "model": "seedance_2_0",
+             "shot_tags": [tag], "draft_tier": False, "prompt_hash": h}
+        if o == "kept":
+            r["outcome"] = "kept"
+        else:
+            r["outcome"], r["reject_reason"] = "rejected", o
+        rows.append(r)
+    return rows
+
+
+def test_flag_b_fires_on_all_structural_no_keeper():
+    rows = _cluster("deadbeef0001", ["identity-drift"] * 6)
+    flags = hm.wasted_reroll_flags(rows)
+    assert len(flags) == 1 and "wasted re-roll" in flags[0]
+    assert "deadbeef0001" in flags[0]
+
+
+def test_flag_b_silent_when_cluster_has_a_keeper():
+    # variance-harvest: same locked prompt, a structural one-off, but a KEEPER
+    # proves the prompt works → must NOT fire (keeper-presence discriminator)
+    rows = _cluster("cafe00002222", ["kept"] + ["identity-drift"] * 6)
+    assert hm.wasted_reroll_flags(rows) == []
+
+
+def test_flag_b_silent_below_min_cluster():
+    rows = _cluster("aaaa11112222", ["identity-drift"] * 3)
+    assert hm.wasted_reroll_flags(rows) == []
+
+
+def test_flag_b_ignores_stochastic_pile():
+    # no keeper, but all stochastic (re-roll territory) → not a wasted re-roll
+    rows = _cluster("bbbb33334444", ["performance"] * 6)
+    assert hm.wasted_reroll_flags(rows) == []
+
+
+def test_flag_b_skips_rows_without_prompt_hash():
+    rows = [{"id": f"p-{i:04d}", "ts": "t", "model": "seedance_2_0",
+             "shot_tags": ["action-melee"], "draft_tier": False,
+             "outcome": "rejected", "reject_reason": "identity-drift"}
+            for i in range(6)]
+    assert hm.wasted_reroll_flags(rows) == []
+
+
+def test_flag_b_respects_supersedes():
+    # a superseding keeper masks the original structural reject → keeper present
+    rows = _cluster("dddd55556666", ["identity-drift"] * 6)
+    rows.append({"id": "p-0099", "ts": "t", "model": "seedance_2_0",
+                 "shot_tags": ["action-melee"], "draft_tier": False,
+                 "prompt_hash": "dddd55556666", "outcome": "kept",
+                 "supersedes": "p-0000"})
+    # cluster now has a keeper among effective rows → silent
+    assert hm.wasted_reroll_flags(rows) == []

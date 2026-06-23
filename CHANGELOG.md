@@ -1,5 +1,14 @@
 # Changelog
 
+## v3.12.1 — 2026-06-22
+
+Flag B — the wasted-re-roll detector — completes Wave A (the fast-follow promised in v3.12.0, held until item 1's batch semantics were live). Stacked on v3.12.0.
+
+- **Flag B — wasted re-roll (advisory).** `ratio` now also flags a `prompt_hash` cluster (identical prompt, re-rolled) with ≥ `WASTED_REROLL_MIN` (5) structural rejects and **zero keepers** — someone re-rolling the dice on a prompt that needs a rewrite. New `wasted_reroll_flags()` (pure, operates on supersedes-resolved rows).
+- **The discriminator is keeper-presence, not reason-class.** A legitimate variance-harvest batch (item 1: same locked prompt, N rolls) also forms a repeated-hash cluster that can hold a structural one-off (identity-drift on roll 7 of 10) — so firing on structural-reason alone would false-fire on exactly the hardest, most-batched shots. A harvest contains a **keeper** that proves the prompt works; no keeper + an all-structural pile = the prompt is broken. That distinction is only sound now that item 1 shipped, which is why Flag B was deferred from the v3.12.0 PR.
+- **Own threshold knob.** `WASTED_REROLL_MIN` is separate from the ratio low-n guard — a different concept, tuned independently.
+- 6 new pytest cases (keeper-presence, supersedes-masking, stochastic-pile and no-hash negatives). `db/ledger/README.md` documents Flag B beside Flag A.
+
 ## v3.12.0 — 2026-06-22
 
 Instrument the ledger you already have — Wave A of the framework-improvement series. Closes loops on data the system already collects rather than adding content; everything here is wiring plus one new control arm. (Flag B — the no-keeper wasted-re-roll detector — is a deliberate fast-follow, defined once batch-and-select is in real use.)

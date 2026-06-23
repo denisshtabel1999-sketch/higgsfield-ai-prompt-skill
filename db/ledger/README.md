@@ -108,6 +108,18 @@ default by a wide margin (observed takes/kept under half the default). It is
 default) *or* under-logged failures (a thin denominator). The ratio can't tell
 which, so the flag names both and a human adjudicates — it never rewrites rows.
 
+### Flag B — wasted re-roll (advisory)
+
+`ratio` also flags a **prompt_hash cluster** (identical prompt, re-rolled) with
+≥ `WASTED_REROLL_MIN` structural rejects and **zero keepers** — someone
+re-rolling the dice on a prompt that needs a rewrite. The discriminator is
+**keeper-presence, not reason-class**: a legitimate variance-harvest batch
+(same locked prompt, N rolls) also forms a repeated-hash cluster that may hold a
+structural one-off (identity-drift on roll 7 of 10), but it contains a keeper
+that proves the prompt works. No keeper + an all-structural pile = the prompt is
+broken — go iterate, don't harvest. (This is why the keeper condition only
+became sound once item 1's batch semantics landed.)
+
 ## `prompt_method` — the framework control arm
 
 `quick` (naive/ad-hoc prompt) vs `mcsla` (full framework prompt), logged with
