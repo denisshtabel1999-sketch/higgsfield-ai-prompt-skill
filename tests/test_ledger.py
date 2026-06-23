@@ -223,3 +223,88 @@ def test_ratio_cli_renders(demo_rows):
     assert "low-n" in text
     assert "Draft burn: 1 draft-tier row(s), 0 kept" in text
     assert "213" in text
+
+
+# ── Item 1: structural/stochastic fork verdict ───────────────────────────────
+
+def _grow(reason_or_kept, n, tag="action-melee"):
+    """n rows on one tag: 1 keep + (n-1) rows of the given reason (or all kept)."""
+    rows = [{"id": f"p-{i:04d}", "ts": "t", "model": "seedance_2_0",
+             "shot_tags": [tag], "draft_tier": False,
+             "outcome": "kept"} for i in range(n)]
+    if reason_or_kept != "kept":
+        for r in rows[1:]:
+            r["outcome"], r["reject_reason"] = "rejected", reason_or_kept
+    return rows
+
+
+def test_fork_verdict_low_n_stays_silent():
+    g = hm.compute_ratio(_grow("performance", 3))["groups"][0]
+    assert g["low_n"] and hm.fork_verdict(g) == "low-n"
+
+
+def test_fork_verdict_stochastic_dominant_batches():
+    # 1 kept + 5 performance (stochastic) → batch+select
+    g = hm.compute_ratio(_grow("performance", 6))["groups"][0]
+    assert hm.fork_verdict(g) == "batch+sel"
+
+
+def test_fork_verdict_structural_dominant_iterates():
+    # 1 kept + 5 identity-drift (structural) → iterate the prompt
+    g = hm.compute_ratio(_grow("identity-drift", 6))["groups"][0]
+    assert hm.fork_verdict(g) == "iterate"
+
+
+# ── Item 4 / Flag A: cause-agnostic ratio plausibility ───────────────────────
+
+def test_flag_a_fires_on_too_good_complex_tag():
+    # action-melee default 5.0; 5 straight keeps → 1.0:1, well under 0.5*default
+    flags = hm.plausibility_flags(hm.compute_ratio(_grow("kept", 5))["groups"])
+    assert len(flags) == 1
+    msg = flags[0]
+    # cause-agnostic: names BOTH explanations, asserts neither
+    assert "re-baseline" in msg and "under-logged" in msg
+
+
+def test_flag_a_silent_when_ratio_near_default():
+    # 1 kept + 5 stochastic on action-melee → 6.0:1, above default 5.0 → no flag
+    assert hm.plausibility_flags(hm.compute_ratio(_grow("performance", 6))["groups"]) == []
+
+
+def test_flag_a_excludes_low_n():
+    assert hm.plausibility_flags(hm.compute_ratio(_grow("kept", 3))["groups"]) == []
+
+
+# ── Item 3: prompt_method control arm ────────────────────────────────────────
+
+def test_prompt_method_validation():
+    base = {"id": "_demo-0001", "ts": "t", "model": "seedance_2_0",
+            "shot_tags": ["pov"], "outcome": "kept", "draft_tier": False}
+    ids = model_ids()
+    assert hm.validate_ledger_row(base, "_demo", set(), set(), ids) == []  # absent ok
+    assert hm.validate_ledger_row({**base, "prompt_method": "mcsla"},
+                                  "_demo", set(), set(), ids) == []
+    bad = hm.validate_ledger_row({**base, "prompt_method": "full"},
+                                 "_demo", set(), set(), ids)
+    assert any("prompt_method must be one of" in p for p in bad)
+
+
+def test_method_ab_excludes_unlabeled():
+    def r(i, outcome, method=None, reason=None):
+        row = {"id": f"p-{i:04d}", "ts": "t", "model": "seedance_2_0",
+               "shot_tags": ["action-melee"], "outcome": outcome, "draft_tier": False}
+        if method:
+            row["prompt_method"] = method
+        if reason:
+            row["reject_reason"] = reason
+        return row
+    rows = [r(0, "kept", "quick"), r(1, "rejected", "quick", "performance"),
+            r(2, "kept", "mcsla"), r(3, "kept", "mcsla"),
+            r(4, "kept"), r(5, "kept")]  # last two unlabeled
+    ab = hm.compute_method_ab(rows)
+    assert ab["n_labeled"] == 4 and ab["excluded_unlabeled"] == 2
+    by = {m["method"]: m for m in ab["methods"]}
+    assert by["quick"]["n"] == 2 and by["quick"]["kept"] == 1
+    assert by["mcsla"]["n"] == 2 and by["mcsla"]["kept"] == 2
+    # matched-class filter
+    assert hm.compute_method_ab(rows, tag="dialogue-cu")["n_labeled"] == 0

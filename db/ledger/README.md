@@ -37,6 +37,7 @@ Underscore-prefixed names are **reserved**.
   "shot_tags": ["dialogue-cu", "two-char"],  // controlled vocab; 1..3 (0..3 only when flagged)
   "scene_ref": "S14-P2",              // optional free text
   "prompt_hash": "a1b2c3d4e5f6",      // optional sha1[:12] — dedupe identical re-rolls
+  "prompt_method": "mcsla",           // optional control arm: quick | mcsla; absent = unlabeled
   "draft_tier": false,                // 480p exploration rolls; excluded from headline ratios
   "outcome": "kept",                  // kept | rejected | flagged
   "reject_reason": null,              // controlled vocab, REQUIRED iff rejected
@@ -82,3 +83,36 @@ Underscore-prefixed names are **reserved**.
 The `ratio` command reports these classes separately per shot tag — a high
 structural% says "stop re-rolling, rewrite"; a high stochastic% prices how
 many takes a keep costs.
+
+### The fork, wired to the iteration decision
+
+`ratio` prints a **verdict** column per shot tag so the split is read at the
+moment you decide whether to iterate (not just in a report):
+
+| Verdict | Condition | What to do |
+|---------|-----------|------------|
+| `iterate` | structural% > stochastic%, n ≥ 5 | Prompt is wrong — single-variable iteration (see `higgsfield-prompt`) |
+| `batch+sel` | stochastic% > structural%, n ≥ 5 | Prompt is right, the dice aren't — lock it, roll N, cull (variance-harvest) |
+| `mixed` | structural% == stochastic% (both > 0) | Diagnose before acting |
+| `low-n` | n < 5 (`LOW_N_THRESHOLD`) | Ledger stays silent; call it by eye |
+
+The verdict is a **pointer, not a command** — and it is only as honest as your
+`reject_reason` labels. At small N hand labels are fine; as the ledger grows,
+vision-grounded classification (planned) hardens it.
+
+### Flag A — ratio plausibility (advisory)
+
+`ratio` also appends a ⚠ line when a tag beats its `DEFAULT_RATIOS` planning
+default by a wide margin (observed takes/kept under half the default). It is
+**cause-agnostic**: beating the default is *either* real lift (re-baseline the
+default) *or* under-logged failures (a thin denominator). The ratio can't tell
+which, so the flag names both and a human adjudicates — it never rewrites rows.
+
+## `prompt_method` — the framework control arm
+
+`quick` (naive/ad-hoc prompt) vs `mcsla` (full framework prompt), logged with
+`--method`. The `ab` command splits takes-per-kept by method so framework lift
+is *measured*, not asserted. The field is **optional with no default**: rows
+logged before it existed (or left unlabeled) are **excluded** from the A/B —
+never bucketed into an arm — so legacy history can't masquerade as a control.
+Compare only matched shot classes (`ab <project> --tag <shot_tag>`).

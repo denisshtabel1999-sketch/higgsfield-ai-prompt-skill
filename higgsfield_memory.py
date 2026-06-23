@@ -22,6 +22,7 @@ Generation ledger (db/ledger/ — see db/ledger/README.md):
   python higgsfield_memory.py last-gen <project>
   python higgsfield_memory.py amend-gen <id> outcome=kept   # superseding row
   python higgsfield_memory.py ratio <project> [--model X] [--tag Y] [--global] [--credits]
+  python higgsfield_memory.py ab <project> [--tag Y] [--global]   # prompt_method A/B
   python higgsfield_memory.py budget <project> --shots <manifest.json|csv>
 
 Per-project namespacing:
@@ -179,6 +180,12 @@ STRUCTURAL_REASONS = {"identity-drift", "wardrobe-contamination", "extra-cuts",
                       "blocking-broken", "text-render", "filter-flagged"}
 STOCHASTIC_REASONS = {"performance", "camera-wrong", "physics", "composition"}
 OUTCOMES = {"kept", "rejected", "flagged"}
+# Control arm for measuring framework lift: `quick` = naive/ad-hoc prompt,
+# `mcsla` = full framework prompt. The field is OPTIONAL and has no default —
+# absence means "unlabeled" and is excluded from the A/B comparison entirely
+# (see compute_method_ab), so months of pre-field history can never masquerade
+# as one arm. Extend via PR like every other vocab.
+PROMPT_METHODS = {"quick", "mcsla"}
 
 # Default planning ratios for budget estimates when the ledger has no usable
 # data for a tag (n<5 or kept=0). These are DEFAULTS, NOT DATA — the brief's
@@ -196,7 +203,7 @@ LOW_N_THRESHOLD = 5
 _LEDGER_REQUIRED = {"id", "ts", "model", "shot_tags", "outcome", "draft_tier"}
 _LEDGER_OPTIONAL = {"mode", "resolution", "aspect", "duration_s", "internal_cuts",
                     "scene_ref", "prompt_hash", "credits", "notes",
-                    "supersedes", "reject_reason", "project"}
+                    "supersedes", "reject_reason", "project", "prompt_method"}
 
 
 def load_specs_models() -> dict:
@@ -328,6 +335,11 @@ def validate_ledger_row(row: dict, project: str, prior_ids: set,
     if not isinstance(row.get("draft_tier"), bool):
         problems.append(f"{rid}: draft_tier must be true/false")
 
+    pm = row.get("prompt_method")
+    if pm is not None and pm not in PROMPT_METHODS:
+        problems.append(f"{rid}: prompt_method must be one of "
+                        f"{sorted(PROMPT_METHODS)} or absent (unlabeled); got {pm!r}")
+
     sup = row.get("supersedes")
     if sup is not None:
         if sup not in prior_ids:
@@ -454,6 +466,87 @@ def compute_ratio(rows: list, model: str = None, tag: str = None) -> dict:
             "credits": sum(r.get("credits", 0) for r in drafts
                            if isinstance(r.get("credits"), (int, float))),
         },
+    }
+
+
+def fork_verdict(group: dict) -> str:
+    """Iterate-vs-batch pointer for one shot-tag group (pure, display-only).
+
+    The honest fork: a miss is either SYSTEMATIC (the prompt is wrong — same
+    failure every roll) or STOCHASTIC (the prompt is right, the dice weren't).
+    Structural rejects mean systematic → rewrite the prompt, one variable at a
+    time. Stochastic rejects mean variance → lock the prompt and batch-and-cull.
+    Below LOW_N_THRESHOLD the split is noise, so the ledger stays silent and the
+    human calls it by eye. This is a POINTER, not a verdict — the human decides."""
+    if group["low_n"]:
+        return "low-n"
+    s, k = group["structural_frac"], group["stochastic_frac"]
+    if s == 0 and k == 0:
+        return "—"
+    if s > k:
+        return "iterate"
+    if k > s:
+        return "batch+sel"
+    return "mixed"
+
+
+def plausibility_flags(groups: list) -> list:
+    """Flag A — cause-agnostic ratio-plausibility (pure, advisory only).
+
+    A tag beating its planning default by a wide margin (observed takes/kept
+    under half the default) is EITHER real lift (the framework working — then
+    DEFAULT_RATIOS is stale and should be re-baselined) OR under-logged failures
+    (the denominator is missing rows). The ratio underdetermines which, so this
+    NEVER asserts a cause — it reports the deviation and names both branches for
+    a human to adjudicate. Low-n groups are excluded (reuses the same guard)."""
+    out = []
+    for g in groups:
+        tpk, default = g["takes_per_kept"], DEFAULT_RATIOS.get(g["tag"])
+        if g["low_n"] or tpk is None or default is None:
+            continue
+        if tpk < 0.5 * default:
+            out.append(
+                f"⚠ {g['tag']}: {round(tpk, 1)}:1 observed vs {default:g}:1 planning "
+                f"default — beating the default by a wide margin. Either real lift "
+                f"(re-baseline DEFAULT_RATIOS) or under-logged failures (check the "
+                f"denominator). Verify before trusting.")
+    return out
+
+
+def compute_method_ab(rows: list, tag: str = None) -> dict:
+    """Item 3 control arm: takes-per-kept split by prompt_method (pure).
+
+    Restricts to final-tier rows carrying a prompt_method in PROMPT_METHODS —
+    UNLABELED rows are counted only as `excluded_unlabeled`, never folded into an
+    arm, so pre-field history can't contaminate the A/B. Pass `tag` to compare on
+    a matched shot class (the only apples-to-apples comparison)."""
+    eff = resolve_effective(rows)
+    if tag:
+        eff = [r for r in eff if tag in r.get("shot_tags", [])]
+    final = [r for r in eff if not r.get("draft_tier")]
+    labeled = [r for r in final if r.get("prompt_method") in PROMPT_METHODS]
+
+    methods = []
+    for method in sorted(PROMPT_METHODS):
+        members = [r for r in labeled if r.get("prompt_method") == method]
+        if not members:
+            continue
+        n = len(members)
+        kept = sum(1 for r in members if r.get("outcome") == "kept")
+        methods.append({
+            "method": method,
+            "n": n,
+            "kept": kept,
+            "takes_per_kept": (n / kept) if kept else None,
+            "structural_frac": sum(1 for r in members if _is_structural(r)) / n,
+            "stochastic_frac": sum(1 for r in members if _is_stochastic(r)) / n,
+            "low_n": n < LOW_N_THRESHOLD,
+        })
+    return {
+        "tag": tag,
+        "methods": methods,
+        "n_labeled": len(labeled),
+        "excluded_unlabeled": len(final) - len(labeled),
     }
 
 
@@ -595,6 +688,9 @@ def _parse_log_gen_args(argv: list):
     p.add_argument("--credits", type=int)
     p.add_argument("--notes")
     p.add_argument("--prompt", help="prompt text — stored only as sha1[:12] prompt_hash")
+    p.add_argument("--method", choices=sorted(PROMPT_METHODS),
+                   help="prompt_method control arm (quick | mcsla); omit to leave "
+                        "unlabeled and out of the A/B")
     return p.parse_args(argv)
 
 
@@ -624,6 +720,7 @@ def cmd_log_gen(argv: list):
             "notes": args.notes,
             "prompt_hash": (hashlib.sha1(args.prompt.strip().encode("utf-8"))
                             .hexdigest()[:12] if args.prompt else None),
+            "prompt_method": args.method,
         }
     try:
         row = log_gen_row(args.project, fields)
@@ -639,7 +736,7 @@ def render_ratio(label: str, result: dict, credits_mode: bool = False) -> str:
     if not result["groups"]:
         lines.append("  (no final-tier rows yet — log generations with log-gen)")
     else:
-        header = f"{'shot_tag':<18} {'n':<4} {'kept':<5} {'takes/kept':<11} {'structural%':<12} {'stochastic%':<12}"
+        header = f"{'shot_tag':<18} {'n':<4} {'kept':<5} {'takes/kept':<11} {'structural%':<12} {'stochastic%':<12} {'verdict':<10}"
         if credits_mode:
             header += f" {'credits/kept':<14} coverage"
         lines.append(header)
@@ -648,7 +745,7 @@ def render_ratio(label: str, result: dict, credits_mode: bool = False) -> str:
             struct = f"{round(100 * g['structural_frac'])}%"
             stoch = f"{round(100 * g['stochastic_frac'])}%"
             row = (f"{g['tag']:<18} {g['n']:<4} {g['kept']:<5} {takes:<11} "
-                   f"{struct:<12} {stoch:<12}")
+                   f"{struct:<12} {stoch:<12} {fork_verdict(g):<10}")
             if credits_mode:
                 cpk = (f"{round(g['credits_per_kept'])}"
                        if g["credits_per_kept"] is not None else "—")
@@ -666,8 +763,13 @@ def render_ratio(label: str, result: dict, credits_mode: bool = False) -> str:
         if credits_mode and d["credits"]:
             burn += f" — {d['credits']} credits"
         lines.append(burn)
+    for flag in plausibility_flags(result["groups"]):
+        lines.append(flag)
     lines.append('Confidence: rows with n < '
                  f'{LOW_N_THRESHOLD} marked "low-n" — do not budget from them.')
+    lines.append('Verdict (above-threshold tags): "iterate" = structural-dominant, '
+                 'rewrite the prompt one variable at a time; "batch+sel" = '
+                 'stochastic-dominant, lock the prompt and batch-and-cull.')
     return "\n".join(lines)
 
 
@@ -702,6 +804,58 @@ def cmd_ratio(argv: list):
         p.error("need a project name or --global")
     result = compute_ratio(rows, model=args.model, tag=args.tag)
     print(render_ratio(label, result, credits_mode=args.credits))
+
+
+def render_method_ab(label: str, result: dict) -> str:
+    scope = f"tag={result['tag']}" if result["tag"] else "all tags"
+    lines = [f"{label.upper()} — prompt_method A/B ({scope}, "
+             f"n_labeled={result['n_labeled']})"]
+    if not result["methods"]:
+        lines.append("  (no rows carry a prompt_method yet — log with "
+                     "--method quick|mcsla to start the control arm)")
+    else:
+        lines.append(f"{'method':<8} {'n':<4} {'kept':<5} {'takes/kept':<11} "
+                     f"{'structural%':<12} {'stochastic%':<12}")
+        for m in result["methods"]:
+            takes = f"{round(m['takes_per_kept'], 1)}" if m["takes_per_kept"] else "—"
+            row = (f"{m['method']:<8} {m['n']:<4} {m['kept']:<5} {takes:<11} "
+                   f"{round(100 * m['structural_frac']):<11}% "
+                   f"{round(100 * m['stochastic_frac']):<11}%")
+            if m["low_n"]:
+                row += "  low-n"
+            lines.append(row)
+    if result["excluded_unlabeled"]:
+        lines.append(f"  ({result['excluded_unlabeled']} unlabeled final-tier row(s) "
+                     "excluded from the comparison — not folded into either arm)")
+    lines.append("Compare only matched shot classes: pass --tag <shot_tag> so quick "
+                 "and mcsla are priced on the same kind of shot.")
+    return "\n".join(lines)
+
+
+def cmd_ab(argv: list):
+    import argparse
+    p = argparse.ArgumentParser(
+        prog="higgsfield_memory.py ab",
+        description="Prompt_method A/B (quick vs mcsla) from the generation "
+                    "ledger — unlabeled rows are excluded, not bucketed.")
+    p.add_argument("project", nargs="?", help="project ledger (omit with --global)")
+    p.add_argument("--tag", help="restrict to one shot tag (matched-class compare)")
+    p.add_argument("--global", dest="global_view", action="store_true",
+                   help="aggregate across all (non-underscore) projects")
+    args = p.parse_args(argv)
+    if args.global_view:
+        rows = load_ledger(GLOBAL_LEDGER)["rows"]
+        label = "global"
+    elif args.project:
+        if re.fullmatch(r"_?[A-Za-z0-9][A-Za-z0-9_-]*", args.project):
+            path = LEDGER_DIR / f"{args.project}.json"
+        else:
+            path = ledger_path(args.project)
+        rows = load_ledger(path)["rows"]
+        label = args.project
+    else:
+        p.error("need a project name or --global")
+    print(render_method_ab(label, compute_method_ab(rows, tag=args.tag)))
 
 
 def _load_shot_manifest(path: Path) -> list:
@@ -1175,6 +1329,8 @@ if __name__ == "__main__":
         cmd_log_gen(sys.argv[2:])
     elif cmd == "ratio":
         cmd_ratio(sys.argv[2:])
+    elif cmd == "ab":
+        cmd_ab(sys.argv[2:])
     elif cmd == "budget":
         cmd_budget(sys.argv[2:])
     elif cmd == "last-gen" and len(sys.argv) >= 3:
