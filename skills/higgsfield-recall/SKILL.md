@@ -200,6 +200,26 @@ python3 ../../higgsfield_memory.py log-gen <project> \
   <id> outcome=kept` — corrections are superseding rows, history stays.
 - Project name: the user's production name if one is established in the
   conversation, else `default`.
+- Logging `--method quick|mcsla` tags the row for the framework-lift A/B
+  (`ab <project> --tag <shot_tag>`); omit it to leave the row unlabeled and
+  out of the comparison — never guess a method.
+
+### Read the verdict before re-rolling
+
+After a few logged rows, `python3 ../../higgsfield_memory.py ratio <project>`
+prints a per-shot-tag **verdict** that decides iterate-vs-batch:
+
+- `iterate` (structural-dominant) → the prompt is wrong; hand off to
+  `higgsfield-prompt` § The Iteration Rule (one variable at a time).
+- `batch+sel` (stochastic-dominant) → the prompt is right; **stop re-rolling
+  one at a time** — lock it, roll a batch, cull (see `higgsfield-prompt` §
+  Batch-and-Select).
+- `low-n` → fewer than five rows; don't trust the split, call it by eye.
+
+A ⚠ plausibility line means a tag is beating its planning default by a wide
+margin — *either* real lift *or* under-logged failures; surface it, let the
+user decide. The verdict is only as good as the `reject_reason` labels, so map
+the user's words to vocab honestly.
 
 ---
 

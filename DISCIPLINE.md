@@ -154,6 +154,27 @@ iteration makes diagnosis impossible.
 **Demonstrated in:** `skills/higgsfield-prompt/SKILL.md` § The
 Iteration Rule — Change One Variable at a Time + 6-Pass Diagnostic.
 
+### Systematic-vs-Stochastic Fork (Iterate or Batch)
+
+Single-variable iteration is the right tool only for a *systematic*
+miss — the prompt is genuinely wrong, failing the same way every
+roll. At a ~1.5% acceptance bar most misses are *stochastic* variance,
+and serial iteration on those "fixes" a prompt that was already right.
+Decide the fork before touching the prompt: structural-dominant rejects
+→ iterate; stochastic-dominant → lock the prompt and **batch-and-cull**
+(variance-harvesting — N identical rolls, select against falsifiable
+criteria), which is distinct from stylistic fan-out (N different looks).
+The classification is computed, not eyeballed — the ledger emits a
+per-shot-tag verdict, silent below `LOW_N_THRESHOLD` — and is only as
+honest as the `reject_reason` labels feeding it.
+
+**When to apply:** Any close-but-not-right generation with enough logged
+history to read the verdict.
+
+**Demonstrated in:** `skills/higgsfield-prompt/SKILL.md` § Before You
+Iterate + § Batch-and-Select; `higgsfield_memory.py` `compute_ratio` /
+`fork_verdict`; `db/ledger/README.md` § The fork.
+
 ### BAD/GOOD/GREAT
 
 Show output gradients explicitly — BAD, GOOD, GREAT examples
