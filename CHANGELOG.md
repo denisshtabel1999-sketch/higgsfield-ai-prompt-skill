@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.15.2 — 2026-06-22
+
+Privacy hygiene: **untracked `.planning/`** from the public repo. The nine `.planning/v3.7.x–v3.8.0/` build-execution notes were internal per-version planning artifacts that don't belong in a public skill library and were the source of the home-path PII scrubbed in v3.15.1. They are now git-ignored — kept on the maintainer's disk, removed from tracking.
+
+- **Dangling provenance links cleaned up:** six shipped files (the two `higgsfield-gpt-image-2` docs, the two `higgsfield-marketing-studio` docs, `assets/fonts/README.md`, and a `docs/archive/` note) cited `.planning/` paths as verification trails — 18 path references. Those were rewritten to keep the provenance prose ("the v3.7.16 Phase 0 verification notes (internal build notes)") without the now-dead links, so `validate.py`'s relative-path check passes. CI caught these (a local run masked them — the untracked files still exist on disk locally but not in a fresh checkout).
+- Their prior contents remain in git history; a history rewrite was intentionally not done, as the only exposure was a macOS username + folder names, never credentials. `validate.py --strict` clean, 110 tests pass, evals 40/40.
+
 ## v3.15.1 — 2026-06-22
 
 Post-series hygiene: activation docs, a privacy scrub, and a clean Problems panel.
