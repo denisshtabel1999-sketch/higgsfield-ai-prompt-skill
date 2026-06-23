@@ -204,6 +204,21 @@ python3 ../../higgsfield_memory.py log-gen <project> \
   (`ab <project> --tag <shot_tag>`); omit it to leave the row unlabeled and
   out of the comparison — never guess a method.
 
+### Optional: log the routing (usage telemetry)
+
+HARD RULE #1 already makes you name the sub-skills you routed to on the first
+line of every response. When a production is tracking which skills actually earn
+their keep, persist that declaration:
+
+```bash
+python3 ../../higgsfield_memory.py log-route --skills higgsfield-prompt,higgsfield-camera
+```
+
+`python3 ../../higgsfield_memory.py routing` then ranks sub-skills by opens and
+lists the never-opened long tail. This is **instrumentation, not a verdict** —
+it makes "which skills are load-bearing, which to prune" answerable from data
+once enough requests accumulate; a small sample is not evidence a skill is dead.
+
 ### Read the verdict before re-rolling
 
 After a few logged rows, `python3 ../../higgsfield_memory.py ratio <project>`
