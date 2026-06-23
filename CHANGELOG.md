@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.11.1 — 2026-06-22
+
+Routing disambiguation between `higgsfield-vibe-motion` and the new `higgsfield-motion-design` (both legitimately trigger on "motion graphics / brand / logo animation").
+
+- **Dispatcher:** rewrote the two routing rows around the real discriminator — **crisp/editable/deployable Remotion code → `higgsfield-vibe-motion`** vs **AI-generated pixel video clip → `higgsfield-motion-design`** — and added an explicit "Vibe Motion vs Motion Design" tie-breaker row with the question to ask when unsure.
+- **Skill catalog table** now lists both new sub-skills (`higgsfield-character-design`, `higgsfield-motion-design`), which were routed but missing from the catalog.
+- **Cross-references:** both skills' frontmatter descriptions and Related-skills sections now name each other with the code-vs-pixel distinction. `higgsfield-vibe-motion` → 3.0.1, `higgsfield-motion-design` → 1.0.1.
+
 ## v3.11.0 — 2026-06-22
 
 June model refresh + two new upstream sub-skills. Sourced from a live `models_explore` snapshot, Higgsfield's official Character Design materials (by @vavavinca), and a motion-design ad flow.
