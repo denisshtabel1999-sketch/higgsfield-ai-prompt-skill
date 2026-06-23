@@ -1,10 +1,12 @@
 # Higgsfield Image Models — Complete Reference
 
-> **Specs snapshot: TODO (2026-06-11)** — pending a `type=image` `models_explore`
-> snapshot (`specs/models_explore_snapshot_image_<date>.json` → `python3
-> sync_specs.py --type image`). Until it lands, the tables below are
-> hand-maintained platform claims of the same class that drifted on the video
-> side — verify live before promising exact enums, durations, or pricing.
+> **Specs snapshot: 2026-06-22** — machine-readable image-model facts (resolution
+> enums, model_type/quality options, aspect ratios) are generated from a
+> `type=image` `models_explore` snapshot into `specs/image-model-specs.yaml` /
+> `.json` and `specs/IMAGE-MODEL-SPECS.md` (regenerate via `python3 sync_specs.py
+> --type image`). Verify model **parameters/enums** against that specs layer
+> first (HARD RULE #3); credits/pricing below remain hand-maintained UI claims —
+> verify live before quoting exact prices.
 
 All image models available in the Higgsfield Image tab.
 ⚠ = Third-party/external model (warning triangle shown in UI)
@@ -367,6 +369,25 @@ All FLUX models show a warning triangle (⚠) in the UI — third-party external
 
 ---
 
+## Recraft Family (⚠ External/Third-party)
+
+### Recraft 4.1
+**Model id:** `recraft-v4-1` · **Provider:** Recraft
+**UI:** Recraft V4.1 (and **Recraft V4.1 Utility**) · 1:1 · 1/4 · NEW
+**Best for:** Photorealistic + expressive generation, brand assets, logos/icons, product mockups
+**Resolution:** 1k (everyday) / 2k (larger assets) — see `specs/image-model-specs.yaml`
+**Batch:** 1–4 images per job (`batch_size`)
+**Unique control — `model_type` (4 variants):**
+- `standard` — expressive, exploratory generation (the default; "Recraft V4.1" in the UI)
+- `vector` — logos, typography, icons, SVG-like illustration
+- `utility` — cleaner, flatter, front-facing, predictable product shots & mockups (the **"Recraft V4.1 Utility"** UI entry)
+- `utility_vector` — utility simplicity with vector output (brand assets)
+
+**Palette control:** `colors` (up to 10 `#RRGGBB` values) and `background_color` (single `#RRGGBB` or null) — strong fit for brand swatches, controlled flat backgrounds, icon/vector work. Hex only: no `#RGB` shorthand, no `#RRGGBBAA`, no `rgba()`, no color names.
+**Prompt tip:** For logos/icons pick `vector`; for clean e-commerce product shots pick `utility`. Pass brand colors via `colors` rather than describing them in prose.
+
+---
+
 ## Swap Tools (Not Generation Models)
 
 These are upload-based transformation tools, not text-to-image generators.
@@ -405,6 +426,7 @@ These are upload-based transformation tools, not text-to-image generators.
 | FLUX.2 Pro | 1.5 | 2K | ⚠ External |
 | Flux Kontext Max | 1.5 | — | ⚠ Edit |
 | Multi Reference | 1.5 | — | Multi-image blend |
+| Recraft 4.1 | varies | 1K/2K | ⚠ External · standard/vector/utility/utility_vector · hex palettes |
 | GPT Image | 2 | — | Character slot |
 | GPT Image 1.5 | 2 | — | Text-in-image |
 | Character Swap | 2 | — | Body swap |

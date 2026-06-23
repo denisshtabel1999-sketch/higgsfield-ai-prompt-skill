@@ -65,6 +65,12 @@ ALIAS_MAP = {
 NOT_SUPPORT_RE = re.compile(
     r"(?:does\s*not|doesn't|cannot|can\s*not|not)\s+support\s+['\"]?([\w:.]+)['\"]?",
     re.IGNORECASE)
+# Complement form: "supports 480p/720p only" means the option forbids every
+# OTHER enum value of the referenced parameter. Deriving from the allowed list
+# (not a hard-coded forbidden list) keeps the constraint correct when the enum
+# grows — e.g. Seedance gaining `4k` is auto-forbidden under `fast`.
+SUPPORTS_ONLY_RE = re.compile(
+    r"supports?\s+([\w:.]+(?:\s*/\s*[\w:.]+)*)\s+only", re.IGNORECASE)
 REQUIRES_RE = re.compile(
     r"['\"]?([\w:.]+)['\"]?\s+requires\s+(\w+)\s*=\s*['\"]?([\w:.]+)['\"]?",
     re.IGNORECASE)
@@ -149,6 +155,24 @@ def extract_constraints(model: dict) -> list[dict]:
                     print(f"  WARN [{model['id']}] unmapped not-support claim "
                           f"for '{opt}': {token!r}", file=sys.stderr)
 
+            # Complement form: "supports 480p/720p only" → forbid the rest.
+            for m in SUPPORTS_ONLY_RE.finditer(seg_match.group(1)):
+                allowed = [t.strip() for t in m.group(1).split("/") if t.strip()]
+                for other_name, other_opts in all_options.items():
+                    if other_name == p["name"] or not other_opts:
+                        continue
+                    if allowed and all(a in other_opts for a in allowed):
+                        forbidden = [o for o in other_opts if o not in allowed]
+                        if forbidden:
+                            constraints.append({
+                                "param": p["name"],
+                                "value": str(opt),
+                                "forbids": {other_name: forbidden},
+                                "source": f"{p['name']} description: "
+                                          f"'{opt}' supports {'/'.join(allowed)} only",
+                            })
+                        break
+
         # Requires-form on the parameter's own values.
         for m in REQUIRES_RE.finditer(desc):
             value, req_param, req_value = (
@@ -230,11 +254,20 @@ def build_spec(snapshot_path: Path, output_type: str = "video") -> dict:
         "models": normalize_models(snapshot, output_type),
     }
     if output_type == "video":
-        # The image-side TODO marker lives in the video spec until a
-        # type=image snapshot exists (Brief #2 item 9).
-        spec["image_models"] = (
-            f"TODO ({date}) — pending a type=image models_explore snapshot; "
-            "video models only below. Do not cite this file for image-model facts.")
+        # The image-side marker lives in the video spec. It was a TODO until a
+        # type=image snapshot existed (Brief #2 item 9); once one is committed
+        # it flips to a pointer at the generated image specs.
+        image_snapshots = sorted(SPECS_DIR.glob("models_explore_snapshot_image_*.json"))
+        if image_snapshots:
+            img_date = re.search(r"(\d{4}-\d{2}-\d{2})", image_snapshots[-1].name)
+            stamp = img_date.group(1) if img_date else date
+            spec["image_models"] = (
+                f"see specs/IMAGE-MODEL-SPECS.md (snapshot {stamp}); "
+                "this file covers video models only.")
+        else:
+            spec["image_models"] = (
+                f"TODO ({date}) — pending a type=image models_explore snapshot; "
+                "video models only below. Do not cite this file for image-model facts.")
     return spec
 
 

@@ -89,6 +89,7 @@ anchors instead of archaeology. Link format: `path#anchor`.
     - [Dialect Support](skills/higgsfield-audio/SKILL.md#dialect-support)
     - [Timestamp Anchoring](skills/higgsfield-audio/SKILL.md#timestamp-anchoring)
     - [Sound Design Specificity](skills/higgsfield-audio/SKILL.md#sound-design-specificity)
+  - [Standalone Audio tab — voice models (TTS / voice tools)](skills/higgsfield-audio/SKILL.md#standalone-audio-tab-voice-models-tts-voice-tools)
   - [Related skills](skills/higgsfield-audio/SKILL.md#related-skills)
 
 ## skills/higgsfield-camera/SKILL.md
@@ -135,6 +136,24 @@ anchors instead of archaeology. Link format: `path#anchor`.
   - [7. Shared Canvas — live collaboration](skills/higgsfield-canvas/SKILL.md#7-shared-canvas-live-collaboration)
   - [8. Cross-surface context](skills/higgsfield-canvas/SKILL.md#8-cross-surface-context)
   - [9. Source acknowledgment](skills/higgsfield-canvas/SKILL.md#9-source-acknowledgment)
+
+## skills/higgsfield-character-design/SKILL.md
+
+- [Higgsfield Character Design — Story Bible](skills/higgsfield-character-design/SKILL.md#higgsfield-character-design-story-bible)
+  - [QUICK FACTS](skills/higgsfield-character-design/SKILL.md#quick-facts)
+  - [The method: world first](skills/higgsfield-character-design/SKILL.md#the-method-world-first)
+  - [Step 1 — Premise](skills/higgsfield-character-design/SKILL.md#step-1-premise)
+  - [Step 2 — World Sheet (six dimensions)](skills/higgsfield-character-design/SKILL.md#step-2-world-sheet-six-dimensions)
+  - [Step 3 — Character (9 questions + the web)](skills/higgsfield-character-design/SKILL.md#step-3-character-9-questions-the-web)
+    - [The 9-Question Character Sheet](skills/higgsfield-character-design/SKILL.md#the-9-question-character-sheet)
+    - [The Character Web](skills/higgsfield-character-design/SKILL.md#the-character-web)
+  - [Step 4 — Story Spine](skills/higgsfield-character-design/SKILL.md#step-4-story-spine)
+  - [Step 5 — Style Sheet (Visual DNA + Forbidden List)](skills/higgsfield-character-design/SKILL.md#step-5-style-sheet-visual-dna-forbidden-list)
+  - [Step 6 — Hand off to generation](skills/higgsfield-character-design/SKILL.md#step-6-hand-off-to-generation)
+  - [Anti-generic drills](skills/higgsfield-character-design/SKILL.md#anti-generic-drills)
+  - [Hard vs soft worldbuilding](skills/higgsfield-character-design/SKILL.md#hard-vs-soft-worldbuilding)
+  - [Templates](skills/higgsfield-character-design/SKILL.md#templates)
+  - [Related skills](skills/higgsfield-character-design/SKILL.md#related-skills)
 
 ## skills/higgsfield-cinema/SKILL.md
 
@@ -430,6 +449,19 @@ anchors instead of archaeology. Link format: `path#anchor`.
     - [The 8-Step Higgsfield Workflow](skills/higgsfield-motion/SKILL.md#the-8-step-higgsfield-workflow)
   - [Motion Reference Input Checklist](skills/higgsfield-motion/SKILL.md#motion-reference-input-checklist)
     - [Binding modes, motion source, and the shortfall diagnostic](skills/higgsfield-motion/SKILL.md#binding-modes-motion-source-and-the-shortfall-diagnostic)
+
+## skills/higgsfield-motion-design/SKILL.md
+
+- [Higgsfield Motion Design](skills/higgsfield-motion-design/SKILL.md#higgsfield-motion-design)
+  - [QUICK FACTS](skills/higgsfield-motion-design/SKILL.md#quick-facts)
+  - [STEP 0 — Determine the flow type](skills/higgsfield-motion-design/SKILL.md#step-0-determine-the-flow-type)
+  - [STEP 1 — Brief intake (one message)](skills/higgsfield-motion-design/SKILL.md#step-1-brief-intake-one-message)
+  - [STEP 2 — Asset handling](skills/higgsfield-motion-design/SKILL.md#step-2-asset-handling)
+  - [STEP 3 — Generate the storyboard](skills/higgsfield-motion-design/SKILL.md#step-3-generate-the-storyboard)
+  - [STEP 4 — Generate the video](skills/higgsfield-motion-design/SKILL.md#step-4-generate-the-video)
+  - [STEP 5 — Review & iterate](skills/higgsfield-motion-design/SKILL.md#step-5-review-iterate)
+  - [Notes & rules](skills/higgsfield-motion-design/SKILL.md#notes-rules)
+  - [Related skills](skills/higgsfield-motion-design/SKILL.md#related-skills)
 
 ## skills/higgsfield-pipeline/SKILL.md
 

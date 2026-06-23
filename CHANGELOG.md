@@ -1,5 +1,29 @@
 # Changelog
 
+## v3.11.0 — 2026-06-22
+
+June model refresh + two new upstream sub-skills. Sourced from a live `models_explore` snapshot, Higgsfield's official Character Design materials (by @vavavinca), and a motion-design ad flow.
+
+### Specs layer refresh (video + image)
+
+- **Fresh `models_explore` snapshots** committed (`specs/models_explore_snapshot_2026-06-22.json` + first-ever `..._image_2026-06-22.json`); `specs/` regenerated via `sync_specs.py`. **The long-standing `type=image` specs TODO is cleared** — `specs/image-model-specs.{yaml,json}` + `IMAGE-MODEL-SPECS.md` now exist (23 image models) and the video `MODEL-SPECS.md` points at them instead of carrying a TODO.
+- **Seedance 2.0 is now 4K** (`mode=std` only); `mode=fast` ("Seedance 2.0 Fast") caps at 480p/720p. Added genre hints (auto/action/horror/comedy/noir/drama/epic) and bitrate std/high.
+- **`sync_specs.py` constraint extractor** learned the "supports X/Y only" phrasing (complement-based, so a growing enum like Seedance's new `4k` is auto-forbidden under `fast`). This **restores the fast+1080p guard** the snapshot's reworded description had silently dropped, and now also catches **fast+4k** — verified in `seedance_lint.py`.
+- **New models documented:** Kling 3.0 Turbo, Grok Imagine 1.5 (video); GPT Image 2 confirmed; **Recraft 4.1** (`recraft-v4-1`, model_type standard/vector/utility/utility_vector + hex palettes) added to `image-models.md` + `model-guide.md`; **Seed Speech** (ByteDance multilingual TTS) added to `higgsfield-audio` alongside the standalone Audio-tab voice tools.
+- **Cinema Studio cap documented:** Seedance 2.0 reaches 4K standalone but Cinema Studio 3.5 still tops out at 1080p — now stated explicitly in `higgsfield-cinema` and `higgsfield-seedance`.
+
+### New sub-skill: `higgsfield-character-design`
+
+- Upstream pre-production "story bible" layer (the WHAT-to-prompt that precedes prompting): Premise → World Sheet (6 dimensions) → 9-Question Character Sheet + Character Web → Story Spine → Style Sheet (Visual DNA + Forbidden List) → hand-off to `higgsfield-prompt` / `higgsfield-soul`. Six fillable worksheets in `templates/character-design/`. Adapted from Higgsfield's official Character Design framework by **@vavavinca** (schemas reused, examples original, attribution preserved).
+
+### New sub-skill: `higgsfield-motion-design`
+
+- Guided animated-ad / brand-motion flow: classicMD vs highMD → one-message brief → single storyboard sheet (GPT Image 2) → video (Seedance 2.0) → iterate. Distinct from `higgsfield-motion` (camera/motion preset library) and `higgsfield-vibe-motion` (Remotion kinetic typography). Adapted from a `SKILL_MOTION.md` flow, updated to current models.
+
+### Wiring
+
+- Both sub-skills routed from root `SKILL.md` dispatcher and added to `sub_skill_descriptions.py` (27 sub-skills on disk). Version → 3.11.0; README badges, footer, and specs-snapshot badge stamped 2026-06-22; `INDEX.md` regenerated.
+
 ## v3.10.0 — 2026-06-11
 
 Generation Ledger (Brief #3) — a **new capability**, not a fix: an empirical hit-rate system that converts unknown generation risk into priced risk. The existing quality memory is a failure ledger; it has no denominator. The ledger logs **every** generation attempt (kept, rejected, filter-flagged), so after ~30–40 rows a production has real takes-per-kept ratios per shot type and can quote credit estimates before generating. One commit per brief item.
