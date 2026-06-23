@@ -19,18 +19,33 @@ TWO-TIER MODEL
   Tier 2 (unchanged, interactive): a full `models_explore` dump → sync_specs.py,
   the only source with the constraint prose. Human-in-loop, as today.
 
-  This script DETECTS ONLY — it never writes specs, never opens a PR, never
-  edits the curated guides. When it reports drift, a human runs Tier 2.
+  This script DETECTS ONLY — it never writes specs (beyond its own CLI
+  baseline), never opens a PR, never edits the curated guides. When it reports a
+  change, a human runs Tier 2.
+
+DEFAULT MODE — CLI-baseline self-diff (the trustworthy tripwire)
+  Compares the live CLI against a committed baseline of the LAST-ACCEPTED CLI
+  surface (`specs/cli_baseline.json`). Both sides are the same source, so the
+  result is pure change-over-time — immune to the CLI↔models_explore
+  disagreements that make a snapshot-diff cry wolf (the CLI reports
+  gpt_image_2=2k/high where models_explore says 1k/low; baked into the baseline
+  once, that disagreement never re-alarms). Bootstrap with `--update-baseline`;
+  after reviewing a change, accept it the same way.
+
+  `--vs-snapshot` keeps the legacy mode (CLI vs the models_explore snapshot —
+  "is my snapshot behind the live CLI?"), which is source-disagreement-prone.
 
 Usage:
-  python3 refresh_specs.py                 # check video + image
-  python3 refresh_specs.py --type video    # one type
-  python3 refresh_specs.py --json          # machine-readable diff
+  python3 refresh_specs.py --update-baseline   # bootstrap / accept current CLI
+  python3 refresh_specs.py                      # self-diff vs baseline (default)
+  python3 refresh_specs.py --type video         # one type
+  python3 refresh_specs.py --vs-snapshot        # legacy snapshot-diff
+  python3 refresh_specs.py --json               # machine-readable diff
 
 Exit codes (the three states must stay distinguishable — a silent failure would
 falsely read as "fresh", which is worse than the reactive WARN we already have):
-  0  fresh — no tracked drift
-  3  drift detected — run the Tier 2 refresh + audit evals/cases/
+  0  fresh — no change since baseline
+  3  change detected — Tier 2 refresh + audit evals/cases/, then --update-baseline
   1  pull failed — CLI/auth error (e.g. session expired; run `higgsfield auth login`)
   2  usage error
 """
@@ -45,6 +60,10 @@ from sync_specs import SPECS_DIR, find_snapshot, snapshot_date
 CLI = "higgsfield"
 # Snapshot top-level fields that the CLI represents as parameters instead.
 _ASPECT_PARAM = "aspect_ratio"
+# Committed last-accepted CLI state. The self-diff compares CLI-now against THIS
+# (apples-to-apples, same source), so a persistent CLI↔models_explore
+# disagreement — baked into the baseline once — never cries wolf again.
+BASELINE_PATH = SPECS_DIR / "cli_baseline.json"
 
 
 class PullError(RuntimeError):
@@ -178,16 +197,17 @@ def _cli_json(args: list) -> object:
         raise PullError(f"`{CLI} {' '.join(args)}` returned non-JSON: {e}")
 
 
-def pull_cli_views(output_type: str, tracked_ids: set) -> tuple:
-    """Live CLI views for every tracked id present in the catalog, plus the set
-    of all catalog ids (so new/untracked models can be noticed). N+1 calls: one
-    `model list`, one `model get` per tracked model present."""
+def pull_cli_views(output_type: str, ids: set = None) -> tuple:
+    """Live CLI views, plus the catalog id→display_name map. `ids=None` pulls
+    EVERY catalog model (the baseline self-diff wants the whole live surface);
+    an id set restricts to those present (the snapshot-diff only needs tracked
+    models). N+1 calls: one `model list`, one `model get` per target."""
     catalog = _cli_json(["model", "list", f"--{output_type}"])
     catalog_ids = {m["job_set_type"]: m.get("display_name", m["job_set_type"])
                    for m in catalog}
-    views = {}
-    for mid in sorted(tracked_ids & set(catalog_ids)):
-        views[mid] = cli_view(_cli_json(["model", "get", mid]))
+    targets = set(catalog_ids) if ids is None else (ids & set(catalog_ids))
+    views = {mid: cli_view(_cli_json(["model", "get", mid]))
+             for mid in sorted(targets)}
     return views, catalog_ids
 
 
@@ -231,7 +251,9 @@ def render(output_type: str, snap_date: str, diff: dict, catalog_ids: dict,
 
 
 def check_type(output_type: str, verbose: bool = False) -> tuple:
-    """Returns (report_text, diff_dict). Raises PullError on a failed pull."""
+    """Snapshot-diff mode (--vs-snapshot): is the committed `models_explore`
+    snapshot behind the live CLI? Source-disagreement-prone — see module docs.
+    Returns (report_text, diff_dict). Raises PullError on a failed pull."""
     snap_path = find_snapshot(output_type=output_type)
     snapshot = json.loads(snap_path.read_text(encoding="utf-8"))
     old_views = {m["id"]: snapshot_view(m)
@@ -242,44 +264,145 @@ def check_type(output_type: str, verbose: bool = False) -> tuple:
     return render(output_type, snapshot_date(snap_path), diff, catalog_ids, verbose), diff
 
 
+# ── v2: CLI-baseline self-diff (the trustworthy tripwire) ────────────────────
+
+def any_change(diff: dict) -> bool:
+    """In self-diff BOTH sides are the live CLI, so EVERY difference is a real
+    change worth a refresh — adds, removals, membership, defaults alike. (The
+    drift/notice split only mattered against the models_explore snapshot, where
+    removals were the CLI under-reporting.)"""
+    return bool(diff["models_added"] or diff["models_removed"]
+                or any(m["drift"] or m["notice"]
+                       for m in diff["models_changed"].values()))
+
+
+def load_baseline() -> dict:
+    if not BASELINE_PATH.exists():
+        return {}
+    return json.loads(BASELINE_PATH.read_text(encoding="utf-8"))
+
+
+def capture_baseline(types) -> dict:
+    """Pull every catalog model and snapshot the live CLI surface. The captured
+    date is informational; the views are what the self-diff compares."""
+    from datetime import date
+    out = {"captured": date.today().isoformat()}
+    for t in types:
+        views, _ = pull_cli_views(t, ids=None)
+        out[t] = views
+    return out
+
+
+def render_self_diff(output_type: str, baseline: dict, diff: dict) -> str:
+    when = baseline.get("captured", "?")
+    lines = [f"[{output_type}] live CLI vs baseline ({when})"]
+    for mid in diff["models_added"]:
+        lines.append(f"  ⚠ CHANGED — new model in CLI: {mid}")
+    for mid in diff["models_removed"]:
+        lines.append(f"  ⚠ CHANGED — model gone from CLI: {mid}")
+    for mid, d in diff["models_changed"].items():
+        for c in d["drift"] + d["notice"]:
+            if c["kind"] in ("options_added",):
+                lines.append(f"  ⚠ CHANGED — {mid}.{c['param']} gained {'/'.join(c['added'])}")
+            elif c["kind"] == "options_removed":
+                lines.append(f"  ⚠ CHANGED — {mid}.{c['param']} dropped {'/'.join(c['removed'])}")
+            elif c["kind"] == "aspect_ratios":
+                lines.append(f"  ⚠ CHANGED — {mid} aspect_ratios gained {'/'.join(c['added'])}")
+            elif c["kind"] == "aspect_ratios_gone":
+                lines.append(f"  ⚠ CHANGED — {mid} aspect_ratios dropped {'/'.join(c['removed'])}")
+            elif c["kind"] == "default":
+                lines.append(f"  ⚠ CHANGED — {mid}.{c['param']} default "
+                             f"{c['from']!r} → {c['to']!r}")
+            elif c["kind"] == "param_missing":
+                lines.append(f"  ⚠ CHANGED — {mid}.{c['param']} param gone")
+            elif c["kind"] == "options_undetailed":
+                lines.append(f"  ⚠ CHANGED — {mid}.{c['param']} options now undetailed")
+    if not any_change(diff):
+        lines.append("  ✓ no change since baseline")
+    return "\n".join(lines)
+
+
+def check_type_vs_baseline(output_type: str, baseline: dict) -> tuple:
+    """Self-diff mode (default): live CLI vs the committed CLI baseline. Both
+    sides are the same source, so the result is pure change-over-time — immune to
+    the CLI↔models_explore disagreements that made the snapshot-diff noisy."""
+    if output_type not in baseline:
+        raise FileNotFoundError(
+            f"no '{output_type}' baseline in {BASELINE_PATH.name} — "
+            f"bootstrap it: python3 refresh_specs.py --update-baseline")
+    old_views = baseline[output_type]
+    new_views, _ = pull_cli_views(output_type, ids=None)
+    diff = diff_catalog(old_views, new_views)
+    return render_self_diff(output_type, baseline, diff), diff
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(
         prog="refresh_specs.py", description=__doc__.splitlines()[0])
     p.add_argument("--type", choices=("video", "image", "both"), default="both")
     p.add_argument("--json", action="store_true", help="machine-readable diff")
     p.add_argument("--verbose", action="store_true", help="list every param-level notice")
+    p.add_argument("--update-baseline", action="store_true",
+                   help="capture the current live CLI surface as the new baseline")
+    p.add_argument("--vs-snapshot", action="store_true",
+                   help="legacy mode: diff CLI vs the models_explore snapshot "
+                        "(source-disagreement-prone)")
     args = p.parse_args(argv)
     types = ("video", "image") if args.type == "both" else (args.type,)
 
-    reports, diffs, drift = [], {}, False
+    # --update-baseline: bootstrap / accept the current live surface.
+    if args.update_baseline:
+        try:
+            fresh = capture_baseline(types)
+        except PullError as e:
+            print(f"PULL FAILED: {e}\n  → run: higgsfield auth login", file=sys.stderr)
+            return 1
+        merged = {**load_baseline(), **fresh}
+        BASELINE_PATH.write_text(json.dumps(merged, indent=2, ensure_ascii=False) + "\n",
+                                 encoding="utf-8")
+        print(f"baseline updated for {', '.join(types)} → {BASELINE_PATH.name} "
+              f"(captured {fresh['captured']})")
+        return 0
+
+    baseline = {} if args.vs_snapshot else load_baseline()
+    if not args.vs_snapshot and not baseline:
+        print(f"no baseline yet — bootstrap it: python3 refresh_specs.py "
+              f"--update-baseline", file=sys.stderr)
+        return 1
+
+    reports, diffs, changed = [], {}, False
     for t in types:
         try:
-            text, diff = check_type(t, verbose=args.verbose)
+            if args.vs_snapshot:
+                text, diff = check_type(t, verbose=args.verbose)
+                changed = changed or has_drift(diff)
+            else:
+                text, diff = check_type_vs_baseline(t, baseline)
+                changed = changed or any_change(diff)
         except PullError as e:
             print(f"PULL FAILED [{t}]: {e}", file=sys.stderr)
-            print("  → not fresh, not drift — the live state is unknown. "
+            print("  → not fresh, not changed — the live state is unknown. "
                   "If the session expired, run: higgsfield auth login", file=sys.stderr)
             return 1
         except FileNotFoundError as e:
-            print(f"NO SNAPSHOT [{t}]: {e}", file=sys.stderr)
+            print(f"MISSING [{t}]: {e}", file=sys.stderr)
             return 1
         reports.append(text)
         diffs[t] = diff
-        drift = drift or has_drift(diff)
 
     if args.json:
         print(json.dumps(diffs, indent=2))
     else:
         print("\n".join(reports))
-        if drift:
-            print("\nDRIFT DETECTED → refresh the snapshot (Tier 2): dump "
-                  "`models_explore`, run `python3 sync_specs.py`, AND audit "
-                  "`evals/cases/` in the same PR (a spec change silently stales "
-                  "eval traps — see v3.11.2/v3.11.3).")
+        if changed:
+            print("\nCHANGE DETECTED → refresh the snapshot (Tier 2): dump "
+                  "`models_explore`, run `python3 sync_specs.py`, audit "
+                  "`evals/cases/` in the same PR (v3.11.2/v3.11.3), then accept "
+                  "the new live surface with `--update-baseline`.")
         else:
-            print("\nFresh. (Tier-1 blind spot: a cross-constraint prose change "
-                  "with no enum movement is invisible here — Tier 2 is authoritative.)")
-    return 3 if drift else 0
+            print("\nFresh. (Blind spot: a cross-constraint prose change with no "
+                  "enum movement is invisible here — Tier 2 is authoritative.)")
+    return 3 if changed else 0
 
 
 if __name__ == "__main__":

@@ -120,3 +120,32 @@ def test_catalog_surfaces_shared_model_drift():
     diff = r.diff_catalog(old, new)
     assert r.has_drift(diff) is True
     assert diff["models_changed"]["a"]["drift"][0]["kind"] == "aspect_ratios"
+
+
+# ── v2 self-diff: any_change counts EVERY difference (both sides are the CLI) ──
+
+def test_any_change_false_when_identical():
+    v = {"a": _view(["16:9"], {"r": {"options": ["720p"], "default": "720p"}})}
+    assert r.any_change(r.diff_catalog(v, {k: dict(x) for k, x in v.items()})) is False
+
+
+def test_any_change_true_on_new_model():
+    old = {"a": _view([], {})}
+    new = {"a": _view([], {}), "b": _view([], {})}
+    assert r.any_change(r.diff_catalog(old, new)) is True
+
+
+def test_any_change_true_on_removed_model():
+    old = {"a": _view([], {}), "b": _view([], {})}
+    new = {"a": _view([], {})}
+    assert r.any_change(r.diff_catalog(old, new)) is True
+
+
+def test_any_change_true_on_a_notice_that_has_drift_false():
+    # an option REMOVED is a notice (has_drift False) but a real CLI change
+    # (any_change True) — this is the whole point of the self-diff vs snapshot-diff
+    old = {"a": _view([], {"mode": {"options": ["std", "fast", "turbo"], "default": "std"}})}
+    new = {"a": _view([], {"mode": {"options": ["std", "fast"], "default": "std"}})}
+    diff = r.diff_catalog(old, new)
+    assert r.has_drift(diff) is False   # snapshot-diff would stay quiet
+    assert r.any_change(diff) is True   # self-diff catches it
