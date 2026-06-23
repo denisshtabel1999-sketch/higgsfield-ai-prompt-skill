@@ -245,6 +245,32 @@ def check_json_db(label: str, path: Path, required_fields: set):
                 check(False, f"{label} entry {eid}: missing field '{field}'")
 
 
+def check_routing():
+    """Routing telemetry log (item 6): schema + every skill in the canonical
+    sub-skill roster. Reuses higgsfield_memory.validate_route_entry so the rule
+    lives in one place."""
+    path = ROOT / "db" / "routing-log.json"
+    if not check(path.exists(), "routing-log: file exists"):
+        return
+    try:
+        db = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        check(False, "routing-log: valid JSON", str(e))
+        return
+    entries = db.get("entries", [])
+    if not check(isinstance(entries, list), "routing-log: 'entries' is a list"):
+        return
+    check(len(entries) == db.get("_total_entries", -1),
+          "routing-log: entry count matches _total_entries",
+          f"declared={db.get('_total_entries')}, actual={len(entries)}")
+    import higgsfield_memory as hm
+    problems = []
+    for e in entries:
+        problems.extend(hm.validate_route_entry(e))
+    check(not problems, f"routing-log: {len(entries)} entry(ies) schema-valid",
+          "; ".join(problems[:3]))
+
+
 def check_version_consistency():
     """Cross-check the single-source version/date in root SKILL.md against the
     README badge, README footer, and the CHANGELOG.md top entry. Catches drift
@@ -775,6 +801,7 @@ def main():
     print("\n[ JSON DATABASES ]")
     check_json_db("filter-memory", DB_FILES["filter"], FILTER_REQUIRED_FIELDS)
     check_json_db("quality-memory", DB_FILES["quality"], QUALITY_REQUIRED_FIELDS)
+    check_routing()
 
     # ── 3. Key root files present ───────────────────────────────────────────
     print("\n[ ROOT FILES ]")

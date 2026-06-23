@@ -1,5 +1,20 @@
 # Changelog
 
+## v3.15.0 — 2026-06-22
+
+Finale of the framework-improvement series — the two remaining closers: Wave C's **scheduling wrapper** and **item 6's routing-telemetry surface**.
+
+### Wave C scheduling — `.github/workflows/spec-drift.yml`
+A weekly scheduled run of the now-trustworthy `refresh_specs.py` tripwire (Mondays, ~3 weeks ahead of the 30-day staleness WARN). Installs the CLI, restores credentials from a `HIGGSFIELD_CREDENTIALS` secret, and branches on the three exit states:
+- **0 fresh** → success, nothing.
+- **3 drift** → opens (or comments on) a GitHub issue with the report + the Tier-2 next steps.
+- **1 pull-failed** → **fails the job loudly.** This is the auth-refresh story: the CLI access_token expires (its refresh_token extends but eventually lapses → "Session expired"), and rather than fragile auto-rotation, expiry surfaces as a red workflow + GitHub notification — re-run `higgsfield auth login` and update the secret. Setup + the auth story are documented in the workflow header. Detect-only; it never writes specs or merges.
+
+### Item 6 — routing telemetry (`log-route` / `routing`)
+The surface that makes "find the load-bearing skills, prune the long tail" answerable from **data instead of a guess**. HARD RULE #1 already makes the agent name its routes on every response's first line; this persists that declaration. New `db/routing-log.json` (append-only) + `log-route --skills a,b,c` (validated against the canonical 27-skill roster, so a typo can't fragment the counts) + `routing` (ranks sub-skills by opens, lists the never-opened tail). `validate.py` gains a `[ ROUTING ]` schema check (reusing `validate_route_entry`). Logged in `higgsfield-recall`.
+- **Honest framing baked in:** this is *instrumentation, not a verdict* — the pruning DECISION waits until enough requests accumulate to trust the distribution; a small sample is not evidence a skill is dead. (And item 6 was never unblocked by item 3's `prompt_method` — it needed this separate routing surface, which now exists.)
+- 8 new pytest cases (roster validation, aggregation, never-opened tail, seed-file validity). The 12 + 4 Wave C `refresh_specs` cases unchanged.
+
 ## v3.14.1 — 2026-06-22
 
 Makes the Wave C spec-drift tripwire **trustworthy** — a CLI-baseline self-diff that fixes the false-positive class v3.14.0 surfaced on its first run.

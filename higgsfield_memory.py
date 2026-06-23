@@ -24,6 +24,10 @@ Generation ledger (db/ledger/ — see db/ledger/README.md):
   python higgsfield_memory.py ratio <project> [--model X] [--tag Y] [--global] [--credits]
   python higgsfield_memory.py ab <project> [--tag Y] [--global]   # prompt_method A/B
   python higgsfield_memory.py agreement <project> [--global]   # vision/human agreement
+
+Routing telemetry (item 6 — which sub-skills opened per request):
+  python higgsfield_memory.py log-route --skills higgsfield-prompt,higgsfield-camera
+  python higgsfield_memory.py routing            # per-skill opens + long tail
   python higgsfield_memory.py budget <project> --shots <manifest.json|csv>
 
 Per-project namespacing:
@@ -43,6 +47,8 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
+from sub_skill_descriptions import SUB_SKILL_DESCRIPTIONS  # canonical sub-skill roster
+
 # ── Paths ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR = Path(__file__).parent
 # DB files live alongside the script (sibling directory or same directory).
@@ -53,6 +59,10 @@ SCRIPT_DIR = Path(__file__).parent
 DB_DIR = Path(os.environ["HF_DB_DIR"]) if os.environ.get("HF_DB_DIR") else SCRIPT_DIR / "db"
 FILTER_DB = DB_DIR / "filter-memory.json"
 QUALITY_DB = DB_DIR / "quality-memory.json"
+# Item 6: which sub-skills the dispatcher opened per request. Instrumentation —
+# the data that makes "find the load-bearing skills, prune the long tail"
+# answerable instead of guessed. The pruning DECISION waits for real data.
+ROUTING_DB = DB_DIR / "routing-log.json"
 # Set by the --project CLI option: project-namespaced DBs are created lazily,
 # so load_db treats a missing file as empty instead of erroring.
 PROJECT_MODE = False
@@ -1152,6 +1162,108 @@ def cmd_amend_gen(argv: list):
     print(json.dumps({"status": "ok", "id": row["id"], "supersedes": gen_id,
                       "outcome": row.get("outcome")}))
 
+# ── Routing telemetry (item 6) ───────────────────────────────────────────────
+# The dispatcher already NAMES its routes (HARD RULE #1: the first line of every
+# response lists the sub-skills routed to). This persists that declaration so
+# "which skills are load-bearing vs the long tail" is answerable from data, not
+# guessed. Like the ledger, it is only as complete as the logging — and pruning
+# waits until enough requests accumulate to trust the distribution.
+
+SUB_SKILLS = set(SUB_SKILL_DESCRIPTIONS)
+
+
+def validate_route_entry(entry: dict) -> list:
+    problems = []
+    rid = entry.get("id", "?")
+    skills = entry.get("skills")
+    if not isinstance(skills, list) or not skills:
+        problems.append(f"{rid}: skills must be a non-empty list")
+    else:
+        bad = [s for s in skills if s not in SUB_SKILLS]
+        if bad:
+            problems.append(f"{rid}: skills not in the sub-skill roster: "
+                            f"{', '.join(bad)}")
+    unknown = set(entry) - {"id", "ts", "skills", "scene_ref", "notes"}
+    if unknown:
+        problems.append(f"{rid}: unknown field(s): {', '.join(sorted(unknown))}")
+    return problems
+
+
+def log_route(skills: list, scene_ref: str = None, notes: str = None) -> dict:
+    db = load_db(ROUTING_DB)
+    entry = {"id": next_id(db["entries"], "R"),
+             "ts": now_iso(),
+             "skills": skills}
+    if scene_ref:
+        entry["scene_ref"] = scene_ref
+    if notes:
+        entry["notes"] = notes
+    problems = validate_route_entry(entry)
+    if problems:
+        raise LedgerError("; ".join(problems))
+    db["entries"].append(entry)
+    save_db(ROUTING_DB, db)
+    return entry
+
+
+def compute_routing(entries: list) -> dict:
+    """Per-skill open counts over logged requests (pure). `never_opened` is the
+    long tail — roster skills with zero opens — which is what a prune review
+    starts from."""
+    n = len(entries)
+    counts = {}
+    for e in entries:
+        for s in e.get("skills", []):
+            counts[s] = counts.get(s, 0) + 1
+    ranked = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
+    return {
+        "n": n,
+        "skills": [{"skill": s, "opens": c, "pct": (c / n) if n else 0.0}
+                   for s, c in ranked],
+        "never_opened": sorted(SUB_SKILLS - set(counts)),
+    }
+
+
+def render_routing(result: dict) -> str:
+    lines = [f"ROUTING — sub-skill opens over {result['n']} logged request(s)"]
+    if not result["skills"]:
+        lines.append("  (no routes logged yet — log with log-route --skills a,b,c)")
+    else:
+        lines.append(f"{'sub-skill':<28} {'opens':<6} share")
+        for s in result["skills"]:
+            lines.append(f"{s['skill']:<28} {s['opens']:<6} {round(100 * s['pct'])}%")
+    tail = result["never_opened"]
+    if tail:
+        lines.append(f"Never opened ({len(tail)}/{len(SUB_SKILLS)}) — prune-review "
+                     f"candidates once n is large enough: {', '.join(tail)}")
+    lines.append("Instrumentation only — let requests accumulate before pruning "
+                 "the tail; a small n is not evidence a skill is dead.")
+    return "\n".join(lines)
+
+
+def cmd_log_route(argv: list):
+    import argparse
+    p = argparse.ArgumentParser(prog="higgsfield_memory.py log-route")
+    p.add_argument("--skills", required=True,
+                   help="comma-separated sub-skill names routed to this request")
+    p.add_argument("--scene", help="optional scene_ref / request tag")
+    p.add_argument("--notes")
+    args = p.parse_args(argv)
+    skills = [s.strip() for s in args.skills.split(",") if s.strip()]
+    try:
+        entry = log_route(skills, scene_ref=args.scene, notes=args.notes)
+    except LedgerError as e:
+        print(json.dumps({"status": "error", "message": str(e),
+                          "roster": sorted(SUB_SKILLS)}))
+        sys.exit(1)
+    print(json.dumps({"status": "ok", "id": entry["id"], "skills": entry["skills"]}))
+
+
+def cmd_routing(argv: list):
+    db = load_db(ROUTING_DB)
+    print(render_routing(compute_routing(db["entries"])))
+
+
 # ── Commands ───────────────────────────────────────────────────────────────────
 
 def add_filter(entry_json: str):
@@ -1491,6 +1603,10 @@ if __name__ == "__main__":
         cmd_ab(sys.argv[2:])
     elif cmd == "agreement":
         cmd_agreement(sys.argv[2:])
+    elif cmd == "log-route":
+        cmd_log_route(sys.argv[2:])
+    elif cmd == "routing":
+        cmd_routing(sys.argv[2:])
     elif cmd == "budget":
         cmd_budget(sys.argv[2:])
     elif cmd == "last-gen" and len(sys.argv) >= 3:

@@ -574,6 +574,7 @@ anchors instead of archaeology. Link format: `path#anchor`.
   - [Manual Recall (User-Initiated)](skills/higgsfield-recall/SKILL.md#manual-recall-user-initiated)
   - [Pre-Generation Checklist (run mentally before every prompt)](skills/higgsfield-recall/SKILL.md#pre-generation-checklist-run-mentally-before-every-prompt)
   - [Log the Generation Result — One Question, One Command](skills/higgsfield-recall/SKILL.md#log-the-generation-result-one-question-one-command)
+    - [Optional: log the routing (usage telemetry)](skills/higgsfield-recall/SKILL.md#optional-log-the-routing-usage-telemetry)
     - [Read the verdict before re-rolling](skills/higgsfield-recall/SKILL.md#read-the-verdict-before-re-rolling)
   - [Database Status Check](skills/higgsfield-recall/SKILL.md#database-status-check)
   - [Related skills](skills/higgsfield-recall/SKILL.md#related-skills)
