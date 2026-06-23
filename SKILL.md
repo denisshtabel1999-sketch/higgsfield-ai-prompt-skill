@@ -12,8 +12,8 @@ description: >
 user-invocable: true
 metadata:
   tags: [higgsfield, video, image, prompt, cinematic, AI, filmmaking, motion, camera]
-  version: 3.10.0
-  updated: 2026-06-11
+  version: 3.11.0
+  updated: 2026-06-22
   author: O-Side Media
   license: MIT
 ---
@@ -127,6 +127,7 @@ budget constraints, client work), **confirm before generating:**
 |------------|----------|
 | User unsure which workspace/tool fits, or asks "what should I use for X" | `higgsfield-workspaces` |
 | Write or improve a prompt | `higgsfield-prompt` + relevant sub-skills |
+| Develop a character / world / story / premise before prompting, build a character sheet / story bible, lock a visual style ("visual DNA"), keep a character consistent across many shots, or "I keep getting generic AI characters" | `higgsfield-character-design` |
 | Cinematic still image prompt (shot framing, angles) | `higgsfield-image-shots` |
 | GPT Image 2.0 / gpt-image-2 prompt, UI mockup, infographic, character/reference sheet, layout-dense image, or static-ad recreation | `higgsfield-gpt-image-2` |
 | Choose the right model | `higgsfield-models` |
@@ -160,6 +161,7 @@ budget constraints, client work), **confirm before generating:**
 | Short film, branded content, Popcorn → video → assembly | `higgsfield-pipeline` |
 | Vibe Motion, motion graphics, kinetic typography, brand animation | `higgsfield-vibe-motion` |
 | Animated text, logo animation, Remotion-based output | `higgsfield-vibe-motion` |
+| Animated AD / brand promo built brief → storyboard sheet → AI video ("make a motion", "motion design ad", "animate my logo into a video", "promo/ad video", classicMD/highMD) | `higgsfield-motion-design` |
 | Pre-generation memory check, apply past failure fixes | `higgsfield-recall` |
 | User reports a generation result (kept/rejected/flagged) — log it to the ledger | `higgsfield-recall` |
 | Takes-per-kept ratios, credit budgeting from logged data | `higgsfield-assist` |

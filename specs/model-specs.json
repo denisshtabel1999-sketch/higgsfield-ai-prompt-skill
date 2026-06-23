@@ -1,6 +1,6 @@
 {
   "generator_version": 1,
-  "image_models": "TODO (2026-06-11) — pending a type=image models_explore snapshot; video models only below. Do not cite this file for image-model facts.",
+  "image_models": "see specs/IMAGE-MODEL-SPECS.md (snapshot 2026-06-22); this file covers video models only.",
   "models": [
     {
       "aliases": [],
@@ -25,7 +25,15 @@
       "modes": [],
       "name": "Cinema Studio Video 3.0",
       "output_type": "video",
-      "params": [],
+      "params": [
+        {
+          "default": false,
+          "description": "Generate audio for the video.",
+          "name": "generate_audio",
+          "required": "optional",
+          "type": "bool"
+        }
+      ],
       "provider": "Higgsfield",
       "resolutions": []
     },
@@ -131,6 +139,138 @@
           ],
           "required": "optional",
           "type": "string"
+        },
+        {
+          "default": "on",
+          "description": "Generate audio. Use 'off' for a silent video.",
+          "name": "sound",
+          "options": [
+            "on",
+            "off"
+          ],
+          "required": "optional",
+          "type": "string"
+        }
+      ],
+      "provider": "Higgsfield",
+      "resolutions": []
+    },
+    {
+      "aliases": [],
+      "aspect_ratios": [],
+      "constraints": [],
+      "duration": null,
+      "id": "clipify",
+      "media_roles": {},
+      "modes": [],
+      "name": "Personal Clipper",
+      "output_type": "video",
+      "params": [
+        {
+          "description": "Exactly one YouTube URL. For multiple source videos, submit one Clipify job per URL.",
+          "name": "urls",
+          "required": "required",
+          "type": "string_array"
+        },
+        {
+          "default": 10,
+          "description": "How many clips to create.",
+          "name": "clips_num",
+          "required": "optional",
+          "type": "number"
+        },
+        {
+          "default": "9:16",
+          "description": "Clip aspect ratio.",
+          "name": "clip_aspect",
+          "options": [
+            "9:16",
+            "1:1",
+            "16:9"
+          ],
+          "required": "optional",
+          "type": "string"
+        },
+        {
+          "default": "#FFE84D",
+          "description": "Subtitle highlight color as #RRGGBB.",
+          "name": "subtitle_highlight_hex",
+          "required": "optional",
+          "type": "string"
+        },
+        {
+          "default": "bottom",
+          "description": "Subtitle vertical position.",
+          "name": "subtitle_position",
+          "options": [
+            "bottom",
+            "center",
+            "top"
+          ],
+          "required": "optional",
+          "type": "string"
+        },
+        {
+          "default": "notosans",
+          "description": "Subtitle font id.",
+          "name": "subtitle_font",
+          "options": [
+            "notosans",
+            "notoserif",
+            "notosansdisplay",
+            "ibmplexsans",
+            "mplusrounded1c",
+            "bebasneue",
+            "archivoblack",
+            "unbounded",
+            "inter",
+            "montserrat",
+            "bangers",
+            "permanentmarker",
+            "playfairdisplay",
+            "caveat"
+          ],
+          "required": "optional",
+          "type": "string"
+        },
+        {
+          "description": "Subtitle font size. Null lets the backend pick the default.",
+          "name": "subtitle_font_size",
+          "required": "optional",
+          "type": "number"
+        },
+        {
+          "default": "as-is",
+          "description": "Subtitle text case.",
+          "name": "subtitle_case",
+          "options": [
+            "upper",
+            "lower",
+            "as-is"
+          ],
+          "required": "optional",
+          "type": "string"
+        },
+        {
+          "default": true,
+          "description": "Track faces when cropping clips.",
+          "name": "track_face_crop",
+          "required": "optional",
+          "type": "bool"
+        },
+        {
+          "default": 1080,
+          "description": "Maximum source processing height.",
+          "name": "max_height",
+          "required": "optional",
+          "type": "number"
+        },
+        {
+          "default": 10,
+          "description": "Segment duration in seconds.",
+          "name": "segment_seconds",
+          "required": "optional",
+          "type": "number"
         }
       ],
       "provider": "Higgsfield",
@@ -314,6 +454,46 @@
       ],
       "provider": "Kling",
       "resolutions": []
+    },
+    {
+      "aliases": [],
+      "aspect_ratios": [
+        "16:9",
+        "9:16",
+        "1:1"
+      ],
+      "constraints": [],
+      "duration": {
+        "max": 15,
+        "min": 3
+      },
+      "id": "kling3_0_turbo",
+      "media_roles": {
+        "medias": [
+          "start_image"
+        ]
+      },
+      "modes": [],
+      "name": "Kling 3.0 Turbo",
+      "output_type": "video",
+      "params": [
+        {
+          "default": "720p",
+          "description": "Output resolution",
+          "name": "resolution",
+          "options": [
+            "720p",
+            "1080p"
+          ],
+          "required": "optional",
+          "type": "string"
+        }
+      ],
+      "provider": "Kling",
+      "resolutions": [
+        "720p",
+        "1080p"
+      ]
     },
     {
       "aliases": [],
@@ -514,6 +694,13 @@
           ],
           "required": "optional",
           "type": "string"
+        },
+        {
+          "default": true,
+          "description": "Generate audio for the video. Set to false for a silent video.",
+          "name": "generate_audio",
+          "required": "optional",
+          "type": "bool"
         }
       ],
       "provider": "Bytedance",
@@ -540,11 +727,12 @@
         {
           "forbids": {
             "resolution": [
-              "1080p"
+              "1080p",
+              "4k"
             ]
           },
           "param": "mode",
-          "source": "mode description: 'fast' does not support 1080p",
+          "source": "mode description: 'fast' supports 480p/720p only",
           "value": "fast"
         }
       ],
@@ -571,23 +759,35 @@
       "params": [
         {
           "default": "720p",
-          "description": "Output resolution",
+          "description": "Output resolution. 4k is supported only with mode='std'; mode='fast' supports 480p/720p only.",
           "name": "resolution",
           "options": [
             "480p",
             "720p",
-            "1080p"
+            "1080p",
+            "4k"
           ],
           "required": "optional",
           "type": "string"
         },
         {
           "default": "std",
-          "description": "'std' = higher quality, 'fast' = cheaper and faster (requires lower plan tier; does not support 1080p)",
+          "description": "'std' = higher quality and supports 480p/720p/1080p/4k; 'fast' = cheaper and faster (requires lower plan tier; supports 480p/720p only, not 1080p/4k)",
           "name": "mode",
           "options": [
             "std",
             "fast"
+          ],
+          "required": "optional",
+          "type": "string"
+        },
+        {
+          "default": "standard",
+          "description": "'standard' = normal output bitrate, 'high' = higher bitrate output",
+          "name": "bitrate_mode",
+          "options": [
+            "standard",
+            "high"
           ],
           "required": "optional",
           "type": "string"
@@ -607,13 +807,21 @@
           ],
           "required": "optional",
           "type": "string"
+        },
+        {
+          "default": true,
+          "description": "Generate native audio for the video. Set to false for a silent video. Independent of audio reference medias.",
+          "name": "generate_audio",
+          "required": "optional",
+          "type": "bool"
         }
       ],
       "provider": "Bytedance",
       "resolutions": [
         "480p",
         "720p",
-        "1080p"
+        "1080p",
+        "4k"
       ]
     },
     {
@@ -845,7 +1053,7 @@
       ]
     }
   ],
-  "snapshot_date": "2026-06-11",
-  "snapshot_file": "models_explore_snapshot_2026-06-11.json",
-  "snapshot_sha256": "39da462c2cc168e8d1d142abed93cdb9f3f24a8b03b571bb14a65f63e618d613"
+  "snapshot_date": "2026-06-22",
+  "snapshot_file": "models_explore_snapshot_2026-06-22.json",
+  "snapshot_sha256": "0e8e7d3d93ff51f9128ea11e857c8874c73e3c9ba3f8abde4193247ac3e77ae1"
 }
