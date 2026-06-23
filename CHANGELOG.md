@@ -1,5 +1,15 @@
 # Changelog
 
+## v3.14.1 — 2026-06-22
+
+Makes the Wave C spec-drift tripwire **trustworthy** — a CLI-baseline self-diff that fixes the false-positive class v3.14.0 surfaced on its first run.
+
+- **The problem v3.14.0 found:** the snapshot-diff compared the live CLI against the `models_explore` snapshot, but the two sources *persistently disagree* (the CLI reports `gpt_image_2=2k/high` and `nano_banana=auto` where `models_explore` — which `specs/` follow — says `1k/low` and no-`auto`). Confirmed by pulling the authoritative image dump: it matches the committed snapshot exactly (a Tier-2 refresh would be a no-op). So the snapshot-diff was **perpetually red on image** for a disagreement that isn't staleness — noise a scheduler would learn to ignore.
+- **The fix — CLI-baseline self-diff (new default mode):** compare the live CLI against a committed baseline of the **last-accepted CLI surface** (`specs/cli_baseline.json`). Both sides are the same source, so the result is pure **change-over-time**, immune to source disagreement — the disagreement is baked into the baseline once and never re-alarms. Bootstrap/accept with `--update-baseline`; the legacy snapshot-diff stays available behind `--vs-snapshot`.
+- **Stricter change semantics in self-diff:** because both sides are the CLI, *every* difference is a real change worth a refresh — adds, removals, membership, defaults all count (`any_change`), unlike the snapshot-diff where removals were just the CLI under-reporting.
+- **Bootstrapped baseline committed** (`specs/cli_baseline.json`, 31 video + 34 image models). After the fix, `refresh_specs.py` reads **green on both types**; a simulated new enum option correctly fires. Change-detected message now also reminds you to `--update-baseline` after accepting.
+- 4 new pytest cases (`any_change` on membership / removal-notice / identical). Detect-only unchanged: the tool still never writes specs (beyond its own baseline), opens a PR, or edits the curated guides.
+
 ## v3.14.0 — 2026-06-22
 
 Wave C Tier 1 of the framework-improvement series — **`refresh_specs.py`, a spec-drift tripwire**. Turns the reactive 30-day staleness WARN into a proactive check: pull the live model catalog from the Higgsfield CLI, diff it against the committed `specs/` snapshot, and report drift loudly. **Detects only — never writes specs, opens a PR, or edits the curated guides** (honoring the existing "don't sync at runtime" stance at `higgsfield-stack/SKILL.md:135`). When it flags drift, a human runs the authoritative Tier 2 refresh (`models_explore` → `sync_specs.py`).
