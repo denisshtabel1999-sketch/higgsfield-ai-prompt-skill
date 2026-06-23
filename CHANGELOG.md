@@ -1,5 +1,14 @@
 # Changelog
 
+## v3.11.3 — 2026-06-22
+
+Eval-golden accuracy pass — the follow-up audit promised after v3.11.2 found two more spots where v3.11.0's spec changes never propagated into the eval goldens (same class as the CI break, but these were passing silently rather than failing).
+
+- **`models-seedance-duration`:** the golden taught `Resolutions: 480p / 720p / 1080p` — stale since v3.11.0 added **4K** to Seedance 2.0. It passed only because no assertion checked the resolution list. Added `4k` to the answer, corrected the fast-mode caveat to "caps at 480p/720p (no 1080p or 4k)", and **added a `\b4k\b` assertion** so this drift can't pass silently again.
+- **`models-fast-mode-tradeoff`:** same fast-mode caveat correction (`fast` forbids 4k as well as 1080p).
+- **Snapshot-date drift:** all five `snapshot 2026-06-11` citations in `evals/cases/models.json` updated to the `2026-06-22` snapshot the specs were actually regenerated from.
+- Full 40-case suite re-audited against current specs: every `enum_legal` trap and duration/aspect/mode claim verified correct. Eval suite stays 40/40.
+
 ## v3.11.2 — 2026-06-22
 
 Fix red CI: the `[higgsfield-cinema] trap-cs-quality-enum` eval went stale when v3.11.0 added 4K to Seedance 2.0.
