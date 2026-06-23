@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.15.2 — 2026-06-22
+
+Privacy hygiene: **untracked `.planning/`** from the public repo. The nine `.planning/v3.7.x–v3.8.0/` build-execution notes were internal per-version planning artifacts that don't belong in a public skill library and were the source of the home-path PII scrubbed in v3.15.1. They are now git-ignored — kept on the maintainer's disk, removed from tracking. No tooling referenced them (`validate.py`, tests, and the dispatcher never touched `.planning/`); `validate.py --strict` and the eval suite are unaffected. (Their prior contents remain in git history; a history rewrite was intentionally not done, as the only exposure was a macOS username + folder names, never credentials.)
+
 ## v3.15.1 — 2026-06-22
 
 Post-series hygiene: activation docs, a privacy scrub, and a clean Problems panel.
