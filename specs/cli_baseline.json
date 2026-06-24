@@ -1,5 +1,5 @@
 {
-  "captured": "2026-06-22",
+  "captured": "2026-06-25",
   "video": {
     "bytedance_video_upscale": {
       "id": "bytedance_video_upscale",
@@ -17,10 +17,6 @@
         "fps": {
           "options": [],
           "default": 24
-        },
-        "height": {
-          "options": [],
-          "default": null
         },
         "medias": {
           "options": [],
@@ -50,10 +46,6 @@
             "4k"
           ],
           "default": "2k"
-        },
-        "width": {
-          "options": [],
-          "default": null
         }
       }
     },
@@ -374,10 +366,6 @@
           "options": [],
           "default": "notosans"
         },
-        "subtitle_font_size": {
-          "options": [],
-          "default": null
-        },
         "subtitle_highlight_hex": {
           "options": [],
           "default": "#FFE84D"
@@ -467,6 +455,44 @@
         }
       }
     },
+    "dubbing": {
+      "id": "dubbing",
+      "output_type": "video",
+      "aspect_ratios": [],
+      "params": {
+        "folder_id": {
+          "options": [],
+          "default": null
+        },
+        "input_video": {
+          "options": [],
+          "default": null
+        },
+        "target_language": {
+          "options": [
+            "ara",
+            "cmn",
+            "deu",
+            "eng",
+            "fil",
+            "fin",
+            "fra",
+            "hin",
+            "ind",
+            "ita",
+            "jpn",
+            "kor",
+            "pol",
+            "por",
+            "rus",
+            "spa",
+            "swe",
+            "tur"
+          ],
+          "default": null
+        }
+      }
+    },
     "grok_video": {
       "id": "grok_video",
       "output_type": "video",
@@ -521,28 +547,6 @@
             "720p"
           ],
           "default": "720p"
-        }
-      }
-    },
-    "image_decompose": {
-      "id": "image_decompose",
-      "output_type": "video",
-      "aspect_ratios": [],
-      "params": {
-        "folder_id": {
-          "options": [],
-          "default": null
-        },
-        "medias": {
-          "options": [],
-          "default": null
-        },
-        "mode": {
-          "options": [
-            "granular",
-            "standard"
-          ],
-          "default": "granular"
         }
       }
     },
@@ -753,6 +757,10 @@
           ],
           "default": "16:9"
         },
+        "avatar_ids": {
+          "options": [],
+          "default": null
+        },
         "avatars": {
           "options": [],
           "default": null
@@ -774,17 +782,7 @@
           "default": null
         },
         "mode": {
-          "options": [
-            "product_review",
-            "product_showcase",
-            "tv_spot",
-            "ugc",
-            "ugc_how_to",
-            "ugc_unboxing",
-            "ugc_virtual_try_on",
-            "virtual_try_on",
-            "wild_card"
-          ],
+          "options": [],
           "default": "ugc"
         },
         "product_ids": {
@@ -1057,21 +1055,17 @@
         }
       }
     },
-    "soul_cast": {
-      "id": "soul_cast",
+    "seedance_2_0_mini": {
+      "id": "seedance_2_0_mini",
       "output_type": "video",
       "aspect_ratios": [
         "16:9",
         "1:1",
         "21:9",
-        "2:3",
-        "3:2",
         "3:4",
         "4:3",
-        "4:5",
-        "5:4",
         "9:16",
-        "9:21"
+        "auto"
       ],
       "params": {
         "aspect_ratio": {
@@ -1079,24 +1073,54 @@
             "16:9",
             "1:1",
             "21:9",
-            "2:3",
-            "3:2",
             "3:4",
             "4:3",
-            "4:5",
-            "5:4",
             "9:16",
-            "9:21"
+            "auto"
           ],
-          "default": "1:1"
+          "default": "16:9"
         },
-        "budget": {
+        "bitrate_mode": {
+          "options": [
+            "high",
+            "standard"
+          ],
+          "default": "standard"
+        },
+        "duration": {
           "options": [],
-          "default": 50
+          "default": 5
+        },
+        "generate_audio": {
+          "options": [],
+          "default": true
+        },
+        "genre": {
+          "options": [
+            "action",
+            "auto",
+            "comedy",
+            "drama",
+            "epic",
+            "horror",
+            "noir"
+          ],
+          "default": "auto"
+        },
+        "medias": {
+          "options": [],
+          "default": null
         },
         "prompt": {
           "options": [],
           "default": null
+        },
+        "resolution": {
+          "options": [
+            "480p",
+            "720p"
+          ],
+          "default": "720p"
         }
       }
     },
@@ -1317,15 +1341,7 @@
           "options": [],
           "default": null
         },
-        "height": {
-          "options": [],
-          "default": null
-        },
         "input_video": {
-          "options": [],
-          "default": null
-        },
-        "width": {
           "options": [],
           "default": null
         }
@@ -1344,7 +1360,18 @@
           "options": [],
           "default": null
         },
-        "height": {
+        "input_video": {
+          "options": [],
+          "default": null
+        }
+      }
+    },
+    "voice_change": {
+      "id": "voice_change",
+      "output_type": "video",
+      "aspect_ratios": [],
+      "params": {
+        "folder_id": {
           "options": [],
           "default": null
         },
@@ -1352,9 +1379,16 @@
           "options": [],
           "default": null
         },
-        "width": {
+        "voice_id": {
           "options": [],
           "default": null
+        },
+        "voice_type": {
+          "options": [
+            "element",
+            "preset"
+          ],
+          "default": "preset"
         }
       }
     },
@@ -1538,10 +1572,6 @@
           "options": [],
           "default": null
         },
-        "height": {
-          "options": [],
-          "default": null
-        },
         "medias": {
           "options": [],
           "default": null
@@ -1552,10 +1582,6 @@
             "4k"
           ],
           "default": "4k"
-        },
-        "width": {
-          "options": [],
-          "default": null
         }
       }
     },
@@ -1968,6 +1994,28 @@
         }
       }
     },
+    "image_decompose": {
+      "id": "image_decompose",
+      "output_type": "image",
+      "aspect_ratios": [],
+      "params": {
+        "folder_id": {
+          "options": [],
+          "default": null
+        },
+        "medias": {
+          "options": [],
+          "default": null
+        },
+        "mode": {
+          "options": [
+            "granular",
+            "standard"
+          ],
+          "default": "granular"
+        }
+      }
+    },
     "kling_omni_image": {
       "id": "kling_omni_image",
       "output_type": "image",
@@ -2310,15 +2358,7 @@
           "options": [],
           "default": null
         },
-        "height": {
-          "options": [],
-          "default": null
-        },
         "input_images": {
-          "options": [],
-          "default": null
-        },
-        "width": {
           "options": [],
           "default": null
         }
@@ -2333,19 +2373,11 @@
           "options": [],
           "default": null
         },
-        "height": {
-          "options": [],
-          "default": null
-        },
         "input_image": {
           "options": [],
           "default": null
         },
         "preset_id": {
-          "options": [],
-          "default": null
-        },
-        "width": {
           "options": [],
           "default": null
         }
@@ -2474,15 +2506,7 @@
           "options": [],
           "default": null
         },
-        "height": {
-          "options": [],
-          "default": null
-        },
         "medias": {
-          "options": [],
-          "default": null
-        },
-        "width": {
           "options": [],
           "default": null
         }
@@ -2632,6 +2656,49 @@
             "high"
           ],
           "default": "basic"
+        }
+      }
+    },
+    "soul_cast": {
+      "id": "soul_cast",
+      "output_type": "image",
+      "aspect_ratios": [
+        "16:9",
+        "1:1",
+        "21:9",
+        "2:3",
+        "3:2",
+        "3:4",
+        "4:3",
+        "4:5",
+        "5:4",
+        "9:16",
+        "9:21"
+      ],
+      "params": {
+        "aspect_ratio": {
+          "options": [
+            "16:9",
+            "1:1",
+            "21:9",
+            "2:3",
+            "3:2",
+            "3:4",
+            "4:3",
+            "4:5",
+            "5:4",
+            "9:16",
+            "9:21"
+          ],
+          "default": "1:1"
+        },
+        "budget": {
+          "options": [],
+          "default": 50
+        },
+        "prompt": {
+          "options": [],
+          "default": null
         }
       }
     },
@@ -2845,10 +2912,6 @@
           "options": [],
           "default": null
         },
-        "height": {
-          "options": [],
-          "default": null
-        },
         "input_image": {
           "options": [],
           "default": null
@@ -2874,10 +2937,6 @@
         "sharpen": {
           "options": [],
           "default": 0
-        },
-        "width": {
-          "options": [],
-          "default": null
         }
       }
     },
@@ -2914,10 +2973,6 @@
           "options": [],
           "default": null
         },
-        "height": {
-          "options": [],
-          "default": null
-        },
         "input_image": {
           "options": [],
           "default": null
@@ -2950,10 +3005,6 @@
         "texture": {
           "options": [],
           "default": 1
-        },
-        "width": {
-          "options": [],
-          "default": null
         }
       }
     },
